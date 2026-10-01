@@ -11,6 +11,12 @@ O **Open FileBot** é a versão comunitária e continuada do renomado FileBot, m
 
 ---
 
+## 🙏 Reconhecimento e Gratidão ao Criador Original
+
+Nosso mais sincero agradecimento a **Reinhard Pointner** ([@rednoah](https://github.com/rednoah)), arquiteto e criador do FileBot original. Foi sua genialidade pioneira, visão e dedicação técnica ao longo dos anos que nos trouxe até aqui e tornou possível a existência de uma das ferramentas de organização de mídia mais poderosas do mundo. O **Open FileBot** existe para honrar esse legado, mantendo-o vivo, livre e aberto para toda a comunidade.
+
+---
+
 ## ✨ Principais Destaques e Melhorias
 
 * 🚀 **Modernizado para Java 25 (LTS)**: Compatibilidade completa com o runtime Java moderno, suporte nativo modular (`--enable-native-access` e `--add-opens`), garantindo estabilidade e alta performance.

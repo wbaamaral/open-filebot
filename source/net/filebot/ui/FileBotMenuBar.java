@@ -16,10 +16,12 @@ public class FileBotMenuBar {
 
 		help.add(newAction("Sobre o FileBot", ResourceManager.getIcon("window.icon.small"), evt -> {
 			String message = String.format(
-				"<html><b style='font-size:13pt'>FileBot %s</b><br><br>"
+				"<html><b style='font-size:13pt'>Open FileBot %s</b><br><br>"
 				+ "Versão Comunitária Open-Source modernizada para Java 25.<br><br>"
+				+ "<b>Criador Original:</b> Reinhard Pointner (rednoah)<br>"
+				+ "<i>Nosso sincero agradecimento e reconhecimento ao autor original pelo trabalho pioneiro que nos trouxe até aqui.</i><br><br>"
 				+ "<b>Ambiente de Execução:</b> Java %s (%s)<br>"
-				+ "<b>Modelo:</b> Totalmente Livre (Sem Nagware / Sem Rastreamento)"
+				+ "<b>Licença:</b> GNU Affero GPL v3 (Software Livre)"
 				+ "</html>",
 				getApplicationVersion(),
 				System.getProperty("java.version"),
@@ -28,7 +30,7 @@ public class FileBotMenuBar {
 			JOptionPane.showMessageDialog(
 				null,
 				message,
-				"Sobre o FileBot",
+				"Sobre o Open FileBot",
 				JOptionPane.INFORMATION_MESSAGE,
 				ResourceManager.getIcon("window.icon.medium")
 			);

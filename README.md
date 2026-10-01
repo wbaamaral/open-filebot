@@ -1,17 +1,18 @@
-# FileBot
+# Open FileBot
 
-Este projeto é um fork do código-fonte oficial do **FileBot** a partir do marco de **23 de março de 2018** para a versão **4.8.0**, preservado e modernizado como software de código aberto (*open-source*).
+> **O organizador e renomeador de mídias definitivo, 100% livre, comunitário e modernizado para Java 25.**
 
-O repositório original foi retirado do ar após o mantenedor original ([rednoah](https://github.com/rednoah)) fechar o código-fonte para comercializar o software sob um modelo proprietário com licenças pagas, após anos de apoio e colaboração da comunidade aberta.
+Este projeto é a continuação livre e comunitária do código-fonte do **FileBot** (criado originalmente por Reinhard Pointner - [rednoah](https://github.com/rednoah)), preservado e modernizado como software de código aberto (*open-source*) sob a licença GNU AGPLv3.
 
-O mantenedor original realizou ações que prejudicaram a comunidade:
-* Adicionou *nagware* (avisos invasivos de compra) ao software original para forçar vendas;
-* Tornou propositalmente mais difícil compilar o software a partir do código-fonte;
-* Censurou e removeu postagens de usuários nos fóruns oficiais sob sua moderação;
-* Enganou a comunidade que apoiou e divulgou o projeto ao longo dos anos;
-* Por fim, removeu o repositório público de código aberto do GitHub sob a justificativa de que "não havia outros colaboradores".
+---
 
-Este repositório existe para manter o FileBot verdadeiramente livre, acessível e sob evolução contínua da comunidade.
+## 🙏 Reconhecimento e Gratidão ao Criador Original
+
+Expressamos nosso mais sincero e profundo agradecimento a **Reinhard Pointner** ([@rednoah](https://github.com/rednoah)), arquiteto e criador do FileBot original.
+
+Foi a sua visão pioneira, dedicação incansável e genialidade técnica ao longo dos anos que construíram a base formidável deste software — desde o motor de correspondência inteligente (*fuzzy matching*), passando pelo poderoso ecossistema de *format bindings* e scripts Groovy, até a integração com serviços mundiais de metadados.
+
+Sem o trabalho pioneiro e a maestria técnica de Reinhard, este projeto e tudo o que desfrutamos hoje simplesmente não existiriam. O **Open FileBot** existe como um tributo à longevidade dessa criação, mantendo esse legado vivo, livre de bloqueios e acessível para toda a comunidade.
 
 ---
 
