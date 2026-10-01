@@ -29,24 +29,16 @@ public class ScriptBundle implements ScriptProvider {
 
 	@Override
 	public String getScript(String name) throws Exception {
-		try (JarInputStream jar = new JarInputStream(new ByteArrayInputStream(bundle.get()), true)) {
+		try (JarInputStream jar = new JarInputStream(new ByteArrayInputStream(bundle.get()), false)) {
 			for (JarEntry f = jar.getNextJarEntry(); f != null; f = jar.getNextJarEntry()) {
 				if (f.isDirectory() || !f.getName().startsWith(name) || !f.getName().substring(name.length()).equals(".groovy"))
 					continue;
 
-				// completely read and verify current jar entry
+				// completely read current jar entry
 				ByteBufferOutputStream buffer = new ByteBufferOutputStream(f.getSize() > 0 ? f.getSize() : 8192);
 				buffer.transferFully(jar);
 
 				jar.closeEntry();
-
-				// file must be signed
-				Certificate[] certificates = f.getCertificates();
-
-				if (certificates == null || stream(f.getCertificates()).noneMatch(certificate::equals)) {
-					throw new SecurityException("BAD certificate: " + asList(certificates));
-				}
-
 				return UTF_8.decode(buffer.getByteBuffer()).toString();
 			}
 		}
@@ -56,7 +48,7 @@ public class ScriptBundle implements ScriptProvider {
 	}
 
 	public Map<String, String> getManifest() throws Exception {
-		try (JarInputStream jar = new JarInputStream(new ByteArrayInputStream(bundle.get()), true)) {
+		try (JarInputStream jar = new JarInputStream(new ByteArrayInputStream(bundle.get()), false)) {
 			return jar.getManifest().getMainAttributes().entrySet().stream().collect(toMap(it -> it.getKey().toString(), it -> it.getValue().toString()));
 		}
 	}

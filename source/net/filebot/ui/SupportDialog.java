@@ -156,28 +156,7 @@ public enum SupportDialog {
 	abstract String getURI();
 
 	public static void maybeShow() {
-		try {
-			PreferencesEntry<String> persistentSupportRevision = Settings.forPackage(SupportDialog.class).entry("support.revision");
-			List<Integer> supportRevision = matchIntegers(persistentSupportRevision.getValue());
-
-			int lastSupportRevision = supportRevision.stream().max(Integer::compare).orElse(0);
-			int currentRevision = getApplicationRevisionNumber();
-
-			int sessionRenameCount = HistorySpooler.getInstance().getSessionHistoryTotalSize();
-			int totalRenameCount = HistorySpooler.getInstance().getPersistentHistoryTotalSize();
-
-			// show donation / review reminders to power users
-			SupportDialog dialog = isAppStore() ? AppStoreReview : Donation;
-
-			if (dialog.feelingLucky(sessionRenameCount, totalRenameCount, currentRevision, lastSupportRevision, supportRevision.size())) {
-				if (dialog.show(totalRenameCount, supportRevision.isEmpty())) {
-					supportRevision = Stream.concat(supportRevision.stream(), Stream.of(currentRevision)).sorted().distinct().collect(toList());
-					persistentSupportRevision.setValue(supportRevision.toString());
-				}
-			}
-		} catch (Exception e) {
-			log.log(Level.WARNING, e, e::toString);
-		}
+		// Desativado: software comunitário livre de nagware e popups de doação
 	}
 
 }

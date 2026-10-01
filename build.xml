@@ -687,6 +687,14 @@
 		<!-- copy fatjar -->
 		<copy file="${path.fatjar}" tofile="${dir.portable}/FileBot.jar" />
 
+		<!-- include local offline data and script bundles -->
+		<copy todir="${dir.portable}/data" failonerror="false">
+			<fileset dir="${basedir}/downloads/data" />
+		</copy>
+		<copy todir="${dir.portable}/scripts" failonerror="false">
+			<fileset dir="${basedir}/downloads/scripts" />
+		</copy>
+
 		<!-- copy and resolve ant variables in launcher script -->
 		<copy-replace todir="${dir.portable}">
 			<fileset dir="${dir.installer}/portable" includes="filebot.sh" />
@@ -834,6 +842,14 @@
 				<exclude name="**/*.java" />
 				<exclude name="**/*.properties" />
 			</fileset>
+		</copy>
+
+		<!-- copy local offline data and script bundles to build -->
+		<copy todir="${dir.build}/data" failonerror="false">
+			<fileset dir="${basedir}/downloads/data" />
+		</copy>
+		<copy todir="${dir.build}/scripts" failonerror="false">
+			<fileset dir="${basedir}/downloads/scripts" />
 		</copy>
 	</target>
 

@@ -485,29 +485,54 @@ public class ReleaseInfo {
 		return () -> {
 			byte[] bytes = null;
 
-			// 1. Try local data file first (offline & fast)
 			String prop = getProperty(name);
-			int slash = prop.lastIndexOf('/');
-			String fileName = slash >= 0 ? prop.substring(slash + 1) : prop;
-			File localFile = new File("downloads/data", fileName);
-			if (!localFile.exists()) {
-				localFile = new File("../downloads/data", fileName);
+			int slash = prop != null ? prop.lastIndexOf('/') : -1;
+			String fileName = slash >= 0 ? prop.substring(slash + 1) : (prop != null ? prop : name);
+
+			// 1. Try bundled classpath resource (/data/fileName or /fileName)
+			java.io.InputStream resIn = ReleaseInfo.class.getResourceAsStream("/data/" + fileName);
+			if (resIn == null) {
+				resIn = ReleaseInfo.class.getResourceAsStream("/" + fileName);
 			}
-			if (localFile.exists()) {
-				try (java.io.InputStream in = new XZInputStream(new java.io.FileInputStream(localFile))) {
+			if (resIn != null) {
+				try (java.io.InputStream in = new XZInputStream(resIn)) {
 					bytes = in.readAllBytes();
 				} catch (Exception ex) {
-					debug.log(Level.FINE, "Failed to read local data " + localFile, ex);
+					debug.log(Level.FINE, "Failed to read resource data " + fileName, ex);
 				}
 			}
 
-			// 2. Fetch from cache/remote if not found locally
+			// 2. Try local filesystem data files (offline & fast)
+			if (bytes == null || bytes.length == 0) {
+				for (File dir : new File[] {
+					new File(ApplicationFolder.AppData.get(), "data"),
+					new File(System.getProperty("application.dir", "."), "data"),
+					new File("downloads/data"),
+					new File("../downloads/data"),
+					new File("/opt/filebot/data")
+				}) {
+					File localFile = new File(dir, fileName);
+					if (localFile.exists()) {
+						try (java.io.InputStream in = new XZInputStream(new java.io.FileInputStream(localFile))) {
+							bytes = in.readAllBytes();
+							break;
+						} catch (Exception ex) {
+							debug.log(Level.FINE, "Failed to read local data " + localFile, ex);
+						}
+					}
+				}
+			}
+
+			// 3. Fallback to cache/remote only if property is an actual custom URL (ignoring app.filebot.net)
 			if (bytes == null || bytes.length == 0) {
 				try {
-					Cache cache = Cache.getCache("data", CacheType.Persistent);
-					bytes = cache.bytes(name, n -> new URL(getProperty(n)), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+					String urlStr = getProperty(name);
+					if (urlStr != null && (urlStr.startsWith("http://") || urlStr.startsWith("https://")) && !urlStr.contains("app.filebot.net")) {
+						Cache cache = Cache.getCache("data", CacheType.Persistent);
+						bytes = cache.bytes(name, n -> new URL(urlStr), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+					}
 				} catch (Exception e) {
-					debug.log(Level.FINE, "Failed to fetch remote data for " + name, e);
+					debug.log(Level.FINE, "Failed to fetch data for " + name, e);
 				}
 			}
 

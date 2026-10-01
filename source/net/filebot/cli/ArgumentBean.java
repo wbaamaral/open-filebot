@@ -60,8 +60,11 @@ public class ArgumentBean {
 	@Option(name = "--order", usage = "Episode order", metaVar = "[Airdate, Absolute, DVD]")
 	public String order = "Airdate";
 
-	@Option(name = "--action", usage = "Rename action", metaVar = "[move, copy, keeplink, symlink, hardlink, clone, test]")
+	@Option(name = "--action", usage = "Rename action", metaVar = "[move, copy, keeplink, symlink, hardlink, clone, duplicate, test]")
 	public String action = "move";
+
+	@Option(name = "--apply", usage = "Post-processing actions (e.g. prune, date)", metaVar = "[prune, date]")
+	public String apply = null;
 
 	@Option(name = "--conflict", usage = "Conflict resolution", metaVar = "[skip, override, auto, index, fail]")
 	public String conflict = "skip";

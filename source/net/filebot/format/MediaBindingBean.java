@@ -1060,6 +1060,59 @@ public class MediaBindingBean {
 		return new File(path);
 	}
 
+	@Define("kodi")
+	public File getKodiStandardPath() throws Exception {
+		return getPlexStandardPath();
+	}
+
+	@Define("jellyfin")
+	public File getJellyfinStandardPath() throws Exception {
+		return getPlexStandardPath();
+	}
+
+	@Define("emby")
+	public File getEmbyStandardPath() throws Exception {
+		return getPlexStandardPath();
+	}
+
+	@Define("hdr")
+	public String getHDR() {
+		String hdrFormat = getMediaInfo(StreamKind.Video, 0, "HDR_Format");
+		if (hdrFormat != null && !hdrFormat.isEmpty()) {
+			if (hdrFormat.toLowerCase().contains("dolby vision")) return "Dolby Vision";
+			if (hdrFormat.toLowerCase().contains("hdr10+")) return "HDR10+";
+			if (hdrFormat.toLowerCase().contains("hdr10")) return "HDR10";
+			if (hdrFormat.toLowerCase().contains("hlg")) return "HLG";
+			return hdrFormat;
+		}
+
+		String name = mediaFile != null ? mediaFile.getName() : "";
+		if (name.matches("(?i).*\\b(Dolby[ ._-]?Vision|DoVi|DV)\\b.*")) {
+			return "Dolby Vision";
+		}
+		if (name.matches("(?i).*\\b(HDR10\\+|HDR10Plus)\\b.*")) {
+			return "HDR10+";
+		}
+		if (name.matches("(?i).*\\b(HDR10|HDR)\\b.*")) {
+			return "HDR10";
+		}
+		if (name.matches("(?i).*\\b(HLG)\\b.*")) {
+			return "HLG";
+		}
+		return null;
+	}
+
+	@Define("edition")
+	public String getEdition() {
+		String name = mediaFile != null ? mediaFile.getName() : "";
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)\\b(Director'?s[ ._-]?Cut|Extended[ ._-]?(Cut|Edition)?|Remastered|Theatrical[ ._-]?(Cut|Edition)?|IMAX|Special[ ._-]?Edition|Unrated|Uncut|Collector'?s[ ._-]?Edition)\\b").matcher(name);
+		if (m.find()) {
+			return m.group().replaceAll("[._-]", " ");
+		}
+		return null;
+	}
+
+
 	@Define("self")
 	public AssociativeScriptObject getSelf() {
 		return createBindingObject(mediaFile, infoObject, context, property -> null);

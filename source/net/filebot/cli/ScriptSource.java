@@ -27,11 +27,47 @@ public enum ScriptSource {
 
 		@Override
 		public ScriptProvider getScriptProvider(String input) throws Exception {
+			// 1. Try bundled classpath resource (/scripts/m1.jar.xz)
+			byte[] data = null;
+			java.io.InputStream resIn = getClass().getResourceAsStream("/scripts/m1.jar.xz");
+			if (resIn != null) {
+				try (XZInputStream xz = new XZInputStream(resIn)) {
+					data = xz.readAllBytes();
+				} catch (Exception e) {
+					debug.log(java.util.logging.Level.FINE, "Failed to read bundled script package", e);
+				}
+			}
+
+			// 2. Try local filesystem
+			if (data == null) {
+				for (File candidate : new File[] {
+					new File("downloads/scripts/m1.jar.xz"),
+					new File("../downloads/scripts/m1.jar.xz"),
+					new File("/opt/filebot/scripts/m1.jar.xz")
+				}) {
+					if (candidate.exists()) {
+						try (XZInputStream xz = new XZInputStream(new java.io.FileInputStream(candidate))) {
+							data = xz.readAllBytes();
+							break;
+						} catch (Exception e) {
+							debug.log(java.util.logging.Level.FINE, "Failed to read local script package: " + candidate, e);
+						}
+					}
+				}
+			}
+
+			if (data != null) {
+				byte[] finalData = data;
+				Resource<byte[]> bundle = () -> finalData;
+				return new ScriptBundle(bundle, getClass().getResourceAsStream("repository.cer"));
+			}
+
 			URI resource = new URI(getApplicationProperty("github.stable"));
 			Resource<byte[]> bundle = getCache().bytes(resource, URI::toURL, XZInputStream::new).expire(Cache.ONE_WEEK);
 
 			return new ScriptBundle(bundle, getClass().getResourceAsStream("repository.cer"));
 		}
+
 
 	},
 

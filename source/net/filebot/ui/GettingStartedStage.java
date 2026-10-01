@@ -1,35 +1,38 @@
 package net.filebot.ui;
 
 import static net.filebot.Logging.*;
-import static net.filebot.Settings.*;
 
-import java.awt.Desktop;
-import java.net.URL;
 import java.util.logging.Level;
-
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+
+import net.filebot.ResourceManager;
 
 public class GettingStartedStage {
 
 	public static void start() {
 		SwingUtilities.invokeLater(() -> {
 			try {
-				String helpUrl = getEmbeddedHelpURL();
-				if (helpUrl != null && !helpUrl.isEmpty() && Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-					int choice = JOptionPane.showConfirmDialog(
-						null,
-						"Hello! Do you need help Getting Started?\n\nWould you like to open the video tutorials in your browser?",
-						"FileBot - Getting Started",
-						JOptionPane.YES_NO_OPTION,
-						JOptionPane.INFORMATION_MESSAGE
-					);
-					if (choice == JOptionPane.YES_OPTION) {
-						Desktop.getDesktop().browse(java.net.URI.create(helpUrl));
-					}
-				}
+				String helpText = "<html><b style='font-size:13pt'>Primeiros Passos com o FileBot</b><br><br>"
+					+ "1. <b>Carregar Arquivos:</b> Arraste e solte episódios ou filmes na lista da esquerda (Original Files).<br>"
+					+ "2. <b>Buscar Metadados:</b> Clique no botão <b>Fetch Data</b> (TheMovieDB, TheTVDB, AniDB).<br>"
+					+ "3. <b>Verificar Nomes:</b> Confira os novos nomes na lista da direita (New Names).<br>"
+					+ "4. <b>Renomear:</b> Pressione <b>F5</b> ou clique em <b>Rename</b> para aplicar as alterações.<br><br>"
+					+ "<b>Atalhos Rápidos:</b><br>"
+					+ "• <i>F5:</i> Renomear<br>"
+					+ "• <i>Delete:</i> Remover arquivo da lista<br>"
+					+ "• <i>F1:</i> Esta tela de ajuda"
+					+ "</html>";
+
+				JOptionPane.showMessageDialog(
+					null,
+					helpText,
+					"FileBot - Como Usar",
+					JOptionPane.INFORMATION_MESSAGE,
+					ResourceManager.getIcon("window.icon.medium")
+				);
 			} catch (Throwable e) {
-				debug.log(Level.WARNING, "Failed to open Getting Started help", e);
+				debug.log(Level.WARNING, "Falha ao exibir ajuda interna", e);
 			}
 		});
 	}

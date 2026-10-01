@@ -19,6 +19,11 @@ APP_ROOT=`cd "$PRG_DIR" && pwd`
 
 # add package lib folder to library path
 PACKAGE_LIBRARY_PATH="$APP_ROOT/lib/$(uname -m)"
+if [ -e /usr/lib/libmediainfo.so ] || [ -e /usr/lib64/libmediainfo.so ]; then
+	LIBRARY_PATH="/usr/lib:/usr/lib64:$PACKAGE_LIBRARY_PATH:$LD_LIBRARY_PATH"
+else
+	LIBRARY_PATH="$PACKAGE_LIBRARY_PATH:$LD_LIBRARY_PATH"
+fi
 
 # restore original working dir
 cd "$WORKING_DIR"
@@ -88,9 +93,9 @@ exec "$JAVA" @{java.application.options} \
 	-Dfile.encoding="UTF-8" \
 	-Dsun.jnu.encoding="UTF-8" \
 	-Dnet.filebot.Archive.extractor="$EXTRACTOR" \
-	-Djna.boot.library.path="$PACKAGE_LIBRARY_PATH" \
-	-Djna.library.path="$PACKAGE_LIBRARY_PATH:$LD_LIBRARY_PATH" \
-	-Djava.library.path="$PACKAGE_LIBRARY_PATH:$LD_LIBRARY_PATH" \
+	-Djna.boot.library.path="$LIBRARY_PATH" \
+	-Djna.library.path="$LIBRARY_PATH" \
+	-Djava.library.path="$LIBRARY_PATH" \
 	-Dnet.filebot.AcoustID.fpcalc="$FPCALC_BIN" \
 	-Dapplication.dir="$APP_DATA" \
 	-Duser.home="$USER_HOME" \

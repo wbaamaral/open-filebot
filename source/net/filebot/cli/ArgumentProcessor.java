@@ -6,9 +6,13 @@ import static net.filebot.util.ExceptionUtilities.*;
 import static net.filebot.util.FileUtilities.*;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.script.Bindings;
@@ -93,8 +97,12 @@ public class ArgumentProcessor {
 		}
 
 		if (args.rename) {
-			cli.rename(files, args.getRenameAction(), args.getConflictAction(), args.getAbsoluteOutputFolder(), args.getExpressionFileFormat(), args.getDatasource(), args.getSearchQuery(), args.getSortOrder(), args.getExpressionFilter(), args.getLanguage().getLocale(), args.isStrict(), args.getExecCommand());
+			List<File> renamed = cli.rename(files, args.getRenameAction(), args.getConflictAction(), args.getAbsoluteOutputFolder(), args.getExpressionFileFormat(), args.getDatasource(), args.getSearchQuery(), args.getSortOrder(), args.getExpressionFilter(), args.getLanguage().getLocale(), args.isStrict(), args.getExecCommand());
+			if (args.apply != null && !args.apply.isEmpty() && renamed != null && !renamed.isEmpty()) {
+				applyPostProcessing(files, renamed, args.apply);
+			}
 		}
+
 
 		if (args.check) {
 			// check verification file
@@ -125,6 +133,44 @@ public class ArgumentProcessor {
 		ScriptSource source = ScriptSource.findScriptProvider(args.script);
 		ScriptShell shell = new ScriptShell(source.getScriptProvider(args.script), cli, args.defines);
 		shell.runScript(source.accept(args.script), bindings);
+	}
+
+	private void applyPostProcessing(Collection<File> sourceFiles, List<File> destinationFiles, String apply) {
+		String[] options = apply.toLowerCase().split("[,;| ]+");
+		for (String opt : options) {
+			if ("prune".equals(opt)) {
+				Set<File> parentDirs = sourceFiles.stream().map(File::getParentFile).filter(Objects::nonNull).collect(Collectors.toSet());
+				for (File dir : parentDirs) {
+					pruneEmptyDirectories(dir);
+				}
+			}
+			if ("date".equals(opt)) {
+				long now = System.currentTimeMillis();
+				for (File dest : destinationFiles) {
+					if (dest != null && dest.exists()) {
+						dest.setLastModified(now);
+					}
+				}
+			}
+		}
+	}
+
+	private void pruneEmptyDirectories(File dir) {
+		if (dir == null || !dir.exists() || !dir.isDirectory()) {
+			return;
+		}
+		File[] children = dir.listFiles();
+		if (children != null) {
+			for (File child : children) {
+				if (child.isDirectory()) {
+					pruneEmptyDirectories(child);
+				}
+			}
+			children = dir.listFiles();
+			if (children != null && children.length == 0) {
+				dir.delete();
+			}
+		}
 	}
 
 }

@@ -31,7 +31,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import org.kohsuke.args4j.CmdLineException;
-import org.w3c.dom.Document;
 
 import net.filebot.cli.ArgumentBean;
 import net.filebot.cli.ArgumentProcessor;
@@ -39,12 +38,10 @@ import net.filebot.format.ExpressionFormat;
 import net.filebot.platform.mac.MacAppUtilities;
 import net.filebot.platform.windows.WinAppUtilities;
 import net.filebot.ui.FileBotMenuBar;
-import net.filebot.ui.GettingStartedStage;
 import net.filebot.ui.MainFrame;
 import net.filebot.ui.NotificationHandler;
 import net.filebot.ui.PanelBuilder;
 import net.filebot.ui.SinglePanelFrame;
-import net.filebot.ui.SupportDialog;
 import net.filebot.ui.transfer.FileTransferable;
 import net.filebot.util.PreferencesMap.PreferencesEntry;
 import net.filebot.util.ui.SwingEventBus;
@@ -168,24 +165,6 @@ public class Main {
 		} catch (Throwable e) {
 			log.log(Level.SEVERE, "Failed to initialize JavaFX. Please install JavaFX.", e);
 		}
-
-		// check if application help should be shown
-		if (!"skip".equals(System.getProperty("application.help"))) {
-			try {
-				checkGettingStarted();
-			} catch (Throwable e) {
-				debug.log(Level.WARNING, "Failed to show Getting Started help", e);
-			}
-		}
-
-		// check for application updates
-		if (!"skip".equals(System.getProperty("application.update"))) {
-			try {
-				checkUpdate();
-			} catch (Throwable e) {
-				debug.log(Level.WARNING, "Failed to check for updates", e);
-			}
-		}
 	}
 
 	private static void startUserInterface(ArgumentBean args) {
@@ -211,7 +190,6 @@ public class Main {
 
 			// make sure any long running operations are done now and not later on the shutdown hook thread
 			HistorySpooler.getInstance().commit();
-			SupportDialog.maybeShow();
 
 			// restore preferences on start if empty (TODO: remove after a few releases)
 			Settings.store(ApplicationFolder.AppData.resolve("preferences.backup.xml"));
@@ -240,62 +218,6 @@ public class Main {
 		frame.setVisible(true);
 	}
 
-	/**
-	 * Show update notifications if updates are available
-	 */
-	private static void checkUpdate() throws Exception {
-		Cache cache = Cache.getCache(getApplicationName(), CacheType.Persistent);
-		Document dom = cache.xml("update.url", s -> new URL(getApplicationProperty(s))).expire(Cache.ONE_WEEK).retry(0).get();
-
-		// parse update xml
-		Map<String, String> update = streamElements(dom.getFirstChild()).collect(toMap(n -> n.getNodeName(), n -> n.getTextContent().trim()));
-
-		// check if update is required
-		int latestRev = Integer.parseInt(update.get("revision"));
-		int currentRev = getApplicationRevisionNumber();
-
-		if (latestRev > currentRev && currentRev > 0) {
-			SwingUtilities.invokeLater(() -> {
-				JDialog dialog = new JDialog(JFrame.getFrames()[0], update.get("title"), ModalityType.APPLICATION_MODAL);
-				JPanel pane = new JPanel(new MigLayout("fill, nogrid, insets dialog"));
-				dialog.setContentPane(pane);
-
-				pane.add(new JLabel(ResourceManager.getIcon("window.icon.medium")), "aligny top");
-				pane.add(new JLabel(update.get("message")), "aligny top, gap 10, wrap paragraph:push");
-
-				pane.add(newButton("Download", ResourceManager.getIcon("dialog.continue"), evt -> {
-					openURI(update.get("download"));
-					dialog.setVisible(false);
-				}), "tag ok");
-
-				pane.add(newButton("Details", ResourceManager.getIcon("action.report"), evt -> {
-					openURI(update.get("discussion"));
-				}), "tag help2");
-
-				pane.add(newButton("Ignore", ResourceManager.getIcon("dialog.cancel"), evt -> {
-					dialog.setVisible(false);
-				}), "tag cancel");
-
-				dialog.pack();
-				dialog.setLocation(getOffsetLocation(dialog.getOwner()));
-				dialog.setVisible(true);
-			});
-		}
-	}
-
-	/**
-	 * Show Getting Started to new users
-	 */
-	private static void checkGettingStarted() throws Exception {
-		PreferencesEntry<String> started = Settings.forPackage(Main.class).entry("getting.started").defaultValue("0");
-		if ("0".equals(started.getValue())) {
-			started.setValue("1");
-			started.flush();
-
-			// open Getting Started
-			SwingUtilities.invokeLater(GettingStartedStage::start);
-		}
-	}
 
 	private static void restoreWindowBounds(JFrame window, Settings settings) {
 		// store bounds on close
