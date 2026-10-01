@@ -15,17 +15,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
-@XmlRootElement(name = "history")
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 public class History {
 
-	@XmlElement(name = "sequence")
 	private List<Sequence> sequences;
 
 	public History() {
@@ -38,10 +45,7 @@ public class History {
 
 	public static class Sequence {
 
-		@XmlAttribute(name = "date", required = true)
 		private Date date;
-
-		@XmlElement(name = "rename", required = true)
 		private List<Element> elements;
 
 		private Sequence() {
@@ -77,17 +81,11 @@ public class History {
 
 	public static class Element {
 
-		@XmlAttribute(name = "dir", required = true)
 		private File dir;
-
-		@XmlAttribute(name = "from", required = true)
 		private String from;
-
-		@XmlAttribute(name = "to", required = true)
 		private String to;
 
 		public Element() {
-			// used by JAXB
 		}
 
 		public Element(String from, String to, File dir) {
@@ -196,9 +194,37 @@ public class History {
 
 	public static void exportHistory(History history, OutputStream output) {
 		try {
-			Marshaller marshaller = JAXBContext.newInstance(History.class).createMarshaller();
-			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-			marshaller.marshal(history, output);
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			Document doc = factory.newDocumentBuilder().newDocument();
+			org.w3c.dom.Element root = doc.createElement("history");
+			doc.appendChild(root);
+
+			for (Sequence seq : history.sequences()) {
+				org.w3c.dom.Element seqElem = doc.createElement("sequence");
+				if (seq.date() != null) {
+					seqElem.setAttribute("date", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(seq.date().toInstant().atZone(ZoneId.systemDefault())));
+				}
+				for (Element elem : seq.elements()) {
+					org.w3c.dom.Element renElem = doc.createElement("rename");
+					if (elem.dir() != null) {
+						renElem.setAttribute("dir", elem.dir().getPath());
+					}
+					if (elem.from() != null) {
+						renElem.setAttribute("from", elem.from());
+					}
+					if (elem.to() != null) {
+						renElem.setAttribute("to", elem.to());
+					}
+					seqElem.appendChild(renElem);
+				}
+				root.appendChild(seqElem);
+			}
+
+			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			transformer.transform(new DOMSource(doc), new StreamResult(output));
 		} catch (Exception e) {
 			debug.log(Level.SEVERE, "Failed to write history", e);
 		}
@@ -206,14 +232,69 @@ public class History {
 
 	public static History importHistory(InputStream stream) {
 		try {
-			Unmarshaller unmarshaller = JAXBContext.newInstance(History.class).createUnmarshaller();
-			return ((History) unmarshaller.unmarshal(stream));
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			try {
+				factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+				factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+				factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			} catch (Exception ignored) {
+			}
+			Document doc = factory.newDocumentBuilder().parse(stream);
+			org.w3c.dom.Element root = doc.getDocumentElement();
+
+			History history = new History();
+			NodeList seqNodes = root.getElementsByTagName("sequence");
+			for (int i = 0; i < seqNodes.getLength(); i++) {
+				Node node = seqNodes.item(i);
+				if (node.getNodeType() == Node.ELEMENT_NODE) {
+					org.w3c.dom.Element seqElem = (org.w3c.dom.Element) node;
+					String dateAttr = seqElem.getAttribute("date");
+					Date date = parseDate(dateAttr);
+
+					List<Element> elements = new ArrayList<Element>();
+					NodeList renNodes = seqElem.getElementsByTagName("rename");
+					for (int j = 0; j < renNodes.getLength(); j++) {
+						Node rNode = renNodes.item(j);
+						if (rNode.getNodeType() == Node.ELEMENT_NODE) {
+							org.w3c.dom.Element renElem = (org.w3c.dom.Element) rNode;
+							String dir = renElem.getAttribute("dir");
+							String from = renElem.getAttribute("from");
+							String to = renElem.getAttribute("to");
+							elements.add(new Element(from, to, new File(dir)));
+						}
+					}
+					Sequence sequence = new Sequence();
+					sequence.date = date;
+					sequence.elements = elements;
+					history.add(sequence);
+				}
+			}
+			return history;
 		} catch (Exception e) {
 			debug.log(Level.SEVERE, "Failed to read history", e);
 		}
 
 		// default to empty history
 		return new History();
+	}
+
+	private static Date parseDate(String text) {
+		if (text == null || text.trim().isEmpty()) {
+			return new Date();
+		}
+		try {
+			return Date.from(Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(text)));
+		} catch (Exception e1) {
+			try {
+				return DatatypeFactory.newInstance().newXMLGregorianCalendar(text).toGregorianCalendar().getTime();
+			} catch (Exception e2) {
+				try {
+					return new Date(Long.parseLong(text));
+				} catch (Exception e3) {
+					return new Date();
+				}
+			}
+		}
 	}
 
 }
