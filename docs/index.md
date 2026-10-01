@@ -5,7 +5,7 @@
 [![Java 25](https://img.shields.io/badge/Java-25%20LTS-orange.svg)](https://www.oracle.com/java/)
 [![GitHub Release](https://img.shields.io/github/v/release/wbaamaral/open-filebot?color=blue)](https://github.com/wbaamaral/open-filebot/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/wbaamaral/open-filebot/release-build.yml?branch=main)](https://github.com/wbaamaral/open-filebot/actions)
-[![License](https://img.shields.io/badge/license-GPLv2%20Modified-green.svg)](https://github.com/wbaamaral/open-filebot/blob/main/LICENSE.md)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](https://github.com/wbaamaral/open-filebot/blob/main/LICENSE.md)
 
 O **Open FileBot** é a versão comunitária e continuada do renomado FileBot, mantendo o software livre de rastreamento, livre de assinaturas pagas e sem travas artificiais de uso.
 
@@ -73,4 +73,4 @@ filebot -script fn:sysinfo
 
 ## ⚖️ Licença
 
-O código-fonte do Open FileBot permanece livre sob os termos da licença comunitária disponível em [LICENSE.md](https://github.com/wbaamaral/open-filebot/blob/main/LICENSE.md).
+O código-fonte do Open FileBot é software livre sob os termos da **GNU Affero General Public License v3.0 (GNU AGPLv3)** disponível em [LICENSE.md](https://github.com/wbaamaral/open-filebot/blob/main/LICENSE.md).

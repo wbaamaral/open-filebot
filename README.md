@@ -67,4 +67,4 @@ Caso tenha interesse no código exatamente como estava no momento do fork origin
 
 ## ⚖️ Licença
 
-O código-fonte do FileBot permanece disponível para uso comunitário sob os termos da licença modificada contida no arquivo [LICENSE.md](file:///home/wbaamaral/acervo/projetos/filebot/LICENSE.md).
+O código-fonte do Open FileBot é software livre e está licenciado sob os termos da **GNU Affero General Public License v3.0 (GNU AGPLv3)**. Consulte o arquivo [LICENSE.md](file:///home/wbaamaral/acervo/projetos/filebot/LICENSE.md) para o texto completo da licença.
