@@ -744,7 +744,6 @@
 				<include name="miglayout-core.jar" />
 				<include name="miglayout-swing.jar" />
 				<include name="glazedlists_java16.jar" />
-				<include name="controlsfx.jar" />
 				<include name="rsyntaxtextarea.jar" />
 				<include name="lanterna.jar" />
 				<include name="xz.jar" />
@@ -818,6 +817,38 @@
 	</target>
 
 
+	<target name="test" depends="build" description="Run automated unit tests">
+		<property name="dir.test" location="${basedir}/test" />
+		<property name="dir.build.test" location="${basedir}/build/test" />
+		<property name="dir.reports.test" location="${basedir}/build/reports/test" />
+
+		<mkdir dir="${dir.build.test}" />
+		<mkdir dir="${dir.reports.test}" />
+
+		<path id="test.classpath">
+			<pathelement location="${dir.build}" />
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+			<fileset dir="${dir.lib}/ivy/jar" includes="junit*.jar, hamcrest*.jar" />
+		</path>
+
+		<!-- compile test classes -->
+		<javac srcdir="${dir.test}" destdir="${dir.build.test}" release="${jvm.version}" encoding="utf-8" debug="yes" includeAntRuntime="no">
+			<classpath refid="test.classpath" />
+		</javac>
+
+		<!-- run tests -->
+		<junit printsummary="yes" haltonfailure="no" fork="yes">
+			<jvmarg line="${java.application.options}" />
+			<classpath>
+				<pathelement location="${dir.build.test}" />
+				<path refid="test.classpath" />
+			</classpath>
+			<formatter type="plain" usefile="false" />
+			<test name="net.filebot.AllTests" todir="${dir.reports.test}" />
+		</junit>
+	</target>
+
+
 	<target name="website-docs" depends="revision">
 		<javadoc destdir="${dir.dist}/website/docs" linksource="yes" access="public" classpathref="lib.classpath" encoding="UTF-8" charset="UTF-8" windowtitle="${application.name}" noindex="yes" nohelp="yes" notree="yes" nodeprecated="yes" nonavbar="yes">
 			<fileset dir="${dir.source}" includesfile="${dir.website}/docs/includes.fileset" />
@@ -831,7 +862,7 @@
 
 	<target name="revision" depends="init">
 		<exec executable="git" outputproperty="revision" failonerror="true">
-			<arg line="rev-list --count master" />
+			<arg line="rev-list --count HEAD" />
 		</exec>
 		<echo>Revision: ${revision}</echo>
 	</target>

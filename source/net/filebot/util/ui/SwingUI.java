@@ -55,8 +55,6 @@ import javax.swing.plaf.basic.BasicTableUI;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.UndoManager;
 
-import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
 import net.filebot.Settings;
 
 public final class SwingUI {
@@ -503,23 +501,12 @@ public final class SwingUI {
 		}
 	}
 
-	private static boolean initJavaFX = true;
-
 	public static void initJavaFX() {
-		if (initJavaFX) {
-			initJavaFX = false;
-
-			// initialize JavaFX
-			new JFXPanel();
-
-			// disable JavaFX exit
-			Platform.setImplicitExit(false);
-		}
+		// Pure Swing implementation, no JavaFX runtime required
 	}
 
 	public static void invokeJavaFX(Runnable r) {
-		initJavaFX();
-		Platform.runLater(r);
+		SwingUtilities.invokeLater(r);
 	}
 
 	/**

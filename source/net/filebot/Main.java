@@ -323,7 +323,7 @@ public class Main {
 	private static void initializeSecurityManager() {
 		try {
 			// initialize security policy used by the default security manager
-			// because default the security policy is very restrictive (e.g. no FilePermission)
+			// Note: on Java 24+ (JEP 486), setting Policy or SecurityManager throws UnsupportedOperationException
 			Policy.setPolicy(new Policy() {
 
 				@Override
@@ -342,8 +342,10 @@ public class Main {
 
 			// set default security manager
 			System.setSecurityManager(new SecurityManager());
-		} catch (Exception e) {
-			// security manager was probably set via system property
+		} catch (UnsupportedOperationException e) {
+			debug.fine("SecurityManager is permanently disabled on this Java runtime, continuing with standard security.");
+		} catch (Throwable e) {
+			// security manager was probably set via system property or unsupported
 			debug.log(Level.WARNING, e.getMessage(), e);
 		}
 	}

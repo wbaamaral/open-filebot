@@ -26,6 +26,14 @@ public final class PrivilegedInvocation implements InvocationHandler {
 
 	@Override
 	public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
+		if (System.getSecurityManager() == null) {
+			try {
+				return method.invoke(object, args);
+			} catch (InvocationTargetException e) {
+				throw e.getCause();
+			}
+		}
+
 		try {
 			return AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
 

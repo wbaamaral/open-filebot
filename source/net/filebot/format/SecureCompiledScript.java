@@ -79,6 +79,18 @@ public class SecureCompiledScript extends CompiledScript {
 
 	@Override
 	public Object eval(ScriptContext context) throws ScriptException {
+		if (System.getSecurityManager() == null) {
+			Object value = compiledScript.eval(context);
+			if (value instanceof Callable<?>) {
+				try {
+					return ((Callable<?>) value).call();
+				} catch (Exception e) {
+					throw new ScriptException(e);
+				}
+			}
+			return value;
+		}
+
 		try {
 			return AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
 

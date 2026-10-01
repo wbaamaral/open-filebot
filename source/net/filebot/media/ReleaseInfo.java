@@ -7,6 +7,7 @@ import static java.util.Collections.*;
 import static java.util.ResourceBundle.*;
 import static java.util.regex.Pattern.*;
 import static java.util.stream.Collectors.*;
+import static net.filebot.Logging.*;
 import static net.filebot.Settings.*;
 import static net.filebot.similarity.Normalization.*;
 import static net.filebot.util.FileUtilities.*;
@@ -23,6 +24,7 @@ import java.text.Normalizer.Form;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.logging.Level;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -345,7 +347,10 @@ public class ReleaseInfo {
 	}
 
 	public Pattern getBlacklistPattern() throws Exception {
-		return compileWordPattern(queryBlacklist.get()); // pattern matching any release group name enclosed in separators
+		String[] patterns = stream(queryBlacklist.get())
+			.filter(p -> p != null && !p.equals(".*") && !p.equals(".+") && !p.trim().isEmpty())
+			.toArray(String[]::new);
+		return compileWordPattern(patterns);
 	}
 
 	private Pattern compileWordPattern(String[] patterns) {
@@ -478,8 +483,37 @@ public class ReleaseInfo {
 
 	protected <A> Resource<A[]> resource(String name, Duration expirationTime, Function<String, A> parse, IntFunction<A[]> generator) {
 		return () -> {
-			Cache cache = Cache.getCache("data", CacheType.Persistent);
-			byte[] bytes = cache.bytes(name, n -> new URL(getProperty(n)), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+			byte[] bytes = null;
+
+			// 1. Try local data file first (offline & fast)
+			String prop = getProperty(name);
+			int slash = prop.lastIndexOf('/');
+			String fileName = slash >= 0 ? prop.substring(slash + 1) : prop;
+			File localFile = new File("downloads/data", fileName);
+			if (!localFile.exists()) {
+				localFile = new File("../downloads/data", fileName);
+			}
+			if (localFile.exists()) {
+				try (java.io.InputStream in = new XZInputStream(new java.io.FileInputStream(localFile))) {
+					bytes = in.readAllBytes();
+				} catch (Exception ex) {
+					debug.log(Level.FINE, "Failed to read local data " + localFile, ex);
+				}
+			}
+
+			// 2. Fetch from cache/remote if not found locally
+			if (bytes == null || bytes.length == 0) {
+				try {
+					Cache cache = Cache.getCache("data", CacheType.Persistent);
+					bytes = cache.bytes(name, n -> new URL(getProperty(n)), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+				} catch (Exception e) {
+					debug.log(Level.FINE, "Failed to fetch remote data for " + name, e);
+				}
+			}
+
+			if (bytes == null || bytes.length == 0) {
+				return generator.apply(0);
+			}
 
 			// all data files are UTF-8 encoded XZ compressed text files
 			Stream<String> lines = NEWLINE.splitAsStream(UTF_8.decode(ByteBuffer.wrap(bytes)));

@@ -56,7 +56,13 @@ public enum ScriptSource {
 
 		@Override
 		public String accept(String input) {
-			return input.startsWith("g:") ? input.substring(2) : null;
+			if (input.startsWith("g:")) {
+				return input.substring(2);
+			}
+			if ((input.contains(" ") || input.contains("\n") || input.contains(";")) && !new File(input).exists()) {
+				return input;
+			}
+			return null;
 		}
 
 		@Override

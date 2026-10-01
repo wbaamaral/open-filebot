@@ -23,15 +23,15 @@ public enum ApplicationFolder {
 	private File path;
 
 	ApplicationFolder(String path) {
-		try {
-			// use canonical file path
-			this.path = Paths.get(path).toRealPath(LinkOption.NOFOLLOW_LINKS).toFile();
-		} catch (IOException e) {
-			debug.log(Level.WARNING, e, e::toString);
-
-			// default to file path as is
-			this.path = new File(path).getAbsoluteFile();
+		File f = new File(path).getAbsoluteFile();
+		if (f.exists()) {
+			try {
+				f = f.toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).toFile();
+			} catch (IOException e) {
+				debug.log(Level.FINE, e, e::toString);
+			}
 		}
+		this.path = f;
 	}
 
 	public File get() {
