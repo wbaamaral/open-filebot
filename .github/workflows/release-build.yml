@@ -1,0 +1,72 @@
+name: Build e Publicação de Release
+
+on:
+  release:
+    types: [published, created]
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '25'
+
+      - name: Instalar Apache Ant e Utilitários
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ant ant-optional xz-utils curl
+
+      - name: Configurar Apache Ivy e Suporte a XZ no Ant
+        run: |
+          mkdir -p ~/.ant/lib
+          curl -fsSL https://repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.2/ivy-2.5.2.jar -o ~/.ant/lib/ivy.jar
+          curl -fsSL https://repo1.maven.org/maven2/org/tukaani/xz/1.6/xz-1.6.jar -o ~/.ant/lib/xz.jar
+
+      - name: Resolver Dependências (Ivy)
+        run: |
+          ant resolve
+
+      - name: Compilar Fatjar e Pacote Portable
+        run: |
+          ant fatjar portable
+
+      - name: Listar Binários Gerados
+        run: |
+          echo "=== Arquivos Gerados em dist/ ==="
+          ls -lh dist/
+
+      - name: Salvar Artefatos de Build (Download via Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: filebot-build-artifacts
+          path: |
+            dist/FileBot_*.jar
+            dist/FileBot_*-portable.tar.xz
+            dist/FileBot_*-portable.tar.gz
+
+      - name: Anexar Binários na GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/FileBot_*.jar
+            dist/FileBot_*-portable.tar.xz
+            dist/FileBot_*-portable.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
