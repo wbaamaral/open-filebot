@@ -1,0 +1,15 @@
+# Legacy files
+legacy/
+
+# Build and distribution artifacts
+bin/
+build/
+dist/
+cache/
+
+# Dependency cache
+lib/ivy/
+
+# OS specific files
+.DS_Store
+Thumbs.db

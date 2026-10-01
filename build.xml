@@ -1,0 +1,1009 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<project name="filebot" default="fatjar" xmlns:if="ant:if" xmlns:unless="ant:unless" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+	<!-- define source dirs -->
+	<property name="dir.source" location="${basedir}/source" />
+	<property name="dir.build" location="${basedir}/build" />
+	<property name="dir.dist" location="${basedir}/dist" />
+	<property name="dir.lib" location="${basedir}/lib" />
+	<property name="dir.website" location="${basedir}/website" />
+	<property name="dir.installer" location="${basedir}/installer" />
+
+	<!-- import property files -->
+	<property file="${basedir}/profile.properties" />
+	<property file="${basedir}/app.properties" />
+
+	<property name="release" value="${application.name}_${application.version}" />
+
+	<!-- define output paths -->
+	<property name="dir.cache" location="${basedir}/cache" />
+	<property name="dir.release" location="${basedir}/release/${release}" />
+	<property name="path.fatjar" location="${dir.dist}/${release}.jar" />
+
+
+	<!-- timestamp variables -->
+	<tstamp prefix="tstamp">
+		<format property="date" pattern="yyyy-MM-dd" />
+		<format property="year" pattern="yyyy" />
+	</tstamp>
+
+
+	<!-- copy and replace ant variables macro -->
+	<macrodef name="copy-replace">
+		<attribute name="todir" />
+		<element name="filesets" implicit="yes" />
+		<sequential>
+			<copy todir="@{todir}" encoding="utf-8" overwrite="yes" verbose="yes">
+				<filesets />
+				<filterset begintoken="@{" endtoken="}">
+					<propertyset>
+						<propertyref builtin="all" />
+					</propertyset>
+				</filterset>
+			</copy>
+		</sequential>
+	</macrodef>
+
+
+	<!-- sign with gpg macro -->
+	<macrodef name="gpg-sign">
+		<attribute name="detach" default="no" />
+		<element name="filesets" implicit="yes" />
+		<sequential>
+			<apply executable="gpg" verbose="yes">
+				<arg line="--verbose --batch --yes --local-user ${package.maintainer} --compress-level 0" />
+				<arg line="--armor --detach-sign" if:true="@{detach}" />
+				<arg line="--sign" unless:true="@{detach}" />
+				<srcfile />
+				<filesets />
+			</apply>
+		</sequential>
+	</macrodef>
+
+
+	<!-- deploy release artifacts -->
+	<macrodef name="release-deploy">
+		<attribute name="todir" />
+		<element name="filesets" implicit="yes" />
+		<sequential>
+			<scp todir="@{todir}" trust="yes" verbose="true" sftp="true" keyfile="${deploy.keyfile}">
+				<filesets />
+			</scp>
+		</sequential>
+	</macrodef>
+
+
+	<target name="resolve" description="Retrieve dependencies with Apache Ivy">
+		<delete dir="${dir.lib}/ivy" />
+		<ivy:retrieve pattern="${dir.lib}/ivy/[type]/[artifact].[ext]" />
+
+		<antcall target="resolve-import-native">
+			<param name="arch" value="mac-x86_64" />
+			<param name="arch.jna" value="darwin" />
+			<param name="arch.7zj" value="Mac-x86_64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="win32-x64" />
+			<param name="arch.jna" value="win32-x86-64" />
+			<param name="arch.7zj" value="Windows-amd64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="win32-x86" />
+			<param name="arch.jna" value="win32-x86/" />
+			<param name="arch.7zj" value="Windows-x86" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-amd64" />
+			<param name="arch.jna" value="linux-x86-64" />
+			<param name="arch.7zj" value="Linux-amd64" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-i686" />
+			<param name="arch.jna" value="linux-x86" />
+			<param name="arch.7zj" value="Linux-i386" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-armv7l" />
+			<param name="arch.jna" value="linux-arm" />
+			<param name="arch.7zj" value="linux-arm" />
+		</antcall>
+		<antcall target="resolve-import-native">
+			<param name="arch" value="linux-armv8" />
+			<param name="arch.jna" value="linux-aarch64" />
+			<param name="arch.7zj" value="linux-aarch64" />
+		</antcall>
+	</target>
+
+
+	<target name="resolve-import-native">
+		<unzip src="${dir.lib}/ivy/jar/jna.jar" dest="${dir.lib}/native/${arch}" overwrite="yes">
+			<patternset>
+				<include name="**/${arch.jna}/*.dll" />
+				<include name="**/${arch.jna}/*.so" />
+				<include name="**/${arch.jna}/*.jnilib" />
+			</patternset>
+			<chainedmapper>
+				<flattenmapper />
+				<compositemapper>
+					<globmapper from="*.jnilib" to="*.dylib" />
+					<identitymapper />
+				</compositemapper>
+			</chainedmapper>
+		</unzip>
+		<unzip src="${dir.lib}/ivy/jar/sevenzipjbinding-all-platforms.jar" dest="${dir.lib}/native/${arch}" overwrite="yes">
+			<patternset>
+				<include name="**/${arch.7zj}/*.dll" />
+				<include name="**/${arch.7zj}/*.so" />
+				<include name="**/${arch.7zj}/*.dylib" />
+			</patternset>
+			<chainedmapper>
+				<flattenmapper />
+				<compositemapper>
+					<globmapper from="lib*.dll" to="*.dll" />
+					<identitymapper />
+				</compositemapper>
+			</chainedmapper>
+		</unzip>
+	</target>
+
+
+	<target name="jar" depends="build">
+		<jar destfile="${dir.dist}/lib/filebot.jar" compress="no">
+			<fileset dir="${dir.build}" />
+			<manifest>
+				<attribute name="Build-Date" value="${tstamp.date}" />
+				<attribute name="Build-Revision" value="${revision}" />
+			</manifest>
+		</jar>
+	</target>
+
+
+	<target name="fatjar" depends="jar" description="Build executable jar">
+		<jar destfile="${path.fatjar}" filesetmanifest="merge" duplicate="fail" compress="no">
+			<!-- Manifest for fatjar so its executable-->
+			<manifest>
+				<attribute name="Main-Class" value="net.filebot.Main"/>
+			</manifest>
+
+			<!-- include main jar -->
+			<zipfileset src="${dir.dist}/lib/filebot.jar" />
+
+			<!-- include core libraries -->
+			<zipfileset src="${dir.dist}/lib/args4j.jar">
+				<include name="org/kohsuke/args4j/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/ehcache.jar">
+				<include name="META-INF/services/**" />
+				<include name="net/sf/ehcache/**" />
+				<include name="org/terracotta/**" />
+				<include name="ehcache-failsafe.xml" />
+				<include name="build-info.properties" />
+			</zipfileset>
+
+			<!-- include UI libraries -->
+			<zipfileset src="${dir.dist}/lib/miglayout-core.jar">
+				<include name="net/miginfocom/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/miglayout-swing.jar">
+				<include name="net/miginfocom/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/glazedlists_java16.jar">
+				<include name="ca/odell/glazedlists/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/controlsfx.jar">
+				<include name="org/controlsfx/dialog/**" />
+				<include name="impl/org/controlsfx/i18n/**" />
+				<include name="controlsfx.properties" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/rsyntaxtextarea.jar">
+				<include name="org/fife/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/lanterna.jar">
+				<include name="com/googlecode/lanterna/**" />
+				<include name="**/*.properties" />
+			</zipfileset>
+
+			<!-- include IO libraries -->
+			<zipfileset src="${dir.dist}/lib/xz.jar">
+				<include name="org/tukaani/xz/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/json-io.jar">
+				<include name="com/cedarsoftware/util/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/xmlrpc.jar">
+				<include name="redstone/xmlrpc/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/sevenzipjbinding.jar">
+				<include name="net/sf/sevenzipjbinding/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/commons-io.jar">
+				<include name="org/apache/commons/io/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/commons-vfs2.jar">
+				<include name="org/apache/commons/vfs2/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/junrar.jar">
+				<include name="com/github/junrar/**" />
+			</zipfileset>
+
+			<!-- include native libraries -->
+			<zipfileset src="${dir.dist}/lib/ObjCBridge.jar">
+				<include name="ca/weblite/**" />
+				<include name="com/sun/jna/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/jna.jar">
+				<include name="com/sun/jna/**" />
+
+				<!-- exclude native libraries -->
+				<exclude name="**/*.a" />
+				<exclude name="**/*.so" />
+				<exclude name="**/*.dll" />
+				<exclude name="**/*.dylib" />
+				<exclude name="**/*.jnilib" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/jna-platform.jar">
+				<include name="com/sun/jna/platform/**" />
+			</zipfileset>
+
+			<!-- include extra libraries -->
+			<zipfileset src="${dir.dist}/lib/guava.jar">
+				<include name="com/google/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/streamex.jar">
+				<include name="one/util/streamex/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/icu4j.jar">
+				<include name="com/ibm/icu/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/simmetrics.jar">
+				<include name="uk/ac/shef/wit/simmetrics/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/language-detector.jar">
+				<include name="be/frma/langguess/**" />
+				<include name="com/cybozu/labs/langdetect/**" />
+				<include name="com/optimaize/langdetect/**" />
+				<include name="languages/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/metadata-extractor.jar">
+				<include name="com/drew/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/xmpcore.jar">
+				<include name="com/adobe/xmp/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/jacksum.jar">
+				<include name="jonelo/jacksum/adapt/**" />
+				<include name="jonelo/jacksum/algorithm/**" />
+				<include name="jonelo/sugar/util/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/commons-logging.jar">
+				<include name="org/apache/commons/logging/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/slf4j-api.jar">
+				<include name="org/slf4j/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/slf4j-jdk14.jar">
+				<include name="org/slf4j/**" />
+			</zipfileset>
+
+			<!-- include Groovy libraries -->
+			<zipfileset src="${dir.dist}/lib/groovy-all.jar">
+				<include name="groovy*/**" />
+				<include name="org/codehaus/groovy/**" />
+				<include name="META-INF/dgminfo" />
+				<include name="META-INF/services/**" />
+				<include name="META-INF/*.properties" />
+
+				<!-- filebot already includes it's own extension modules -->
+				<exclude name="META-INF/services/org.codehaus.groovy.runtime.ExtensionModule" />
+			</zipfileset>
+
+			<!-- Ivy for @Grapes automatic dependency management -->
+			<zipfileset src="${dir.dist}/lib/ivy.jar">
+				<include name="org/apache/ivy/**" />
+			</zipfileset>
+
+			<!-- libraries used in external scripts -->
+			<zipfileset src="${dir.dist}/lib/jsoup.jar">
+				<include name="org/jsoup/**" />
+			</zipfileset>
+
+			<!-- AntBuilder including dependencies for ant-javamail, ant-commons-net and ant-jsch -->
+			<zipfileset src="${dir.dist}/lib/ant.jar">
+				<include name="org/apache/tools/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/ant-launcher.jar">
+				<include name="org/apache/tools/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/ant-commons-net.jar">
+				<include name="org/apache/tools/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/ant-jsch.jar">
+				<include name="org/apache/tools/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/ant-javamail.jar">
+				<include name="org/apache/tools/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/commons-net.jar">
+				<include name="org/apache/commons/net/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/jsch.jar">
+				<include name="com/jcraft/jsch/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/mail.jar">
+				<include name="javax/mail/**" />
+				<include name="com/sun/mail/**" />
+				<include name="META-INF/*mail*" />
+			</zipfileset>
+		</jar>
+	</target>
+
+
+	<target name="cask" description="Build Mac application bundle">
+		<tar destfile="${dir.dist}/${release}-darwin.tar.xz" compression="xz" longfile="posix" encoding="utf-8">
+			<tarfileset file="${path.fatjar}" fullpath="FileBot.jar" />
+			<tarfileset dir="${dir.installer}/cask" includes="*.sh" filemode="755" />
+			<tarfileset prefix="lib" dir="${dir.lib}/native/mac-x86_64" includes="fpcalc" filemode="755" />
+			<tarfileset prefix="lib" dir="${dir.lib}/native/mac-x86_64" includes="*.dylib" />
+		</tar>
+	</target>
+
+
+	<target name="appbundle-maspkg-core">
+		<antcall target="appbundle-maspkg">
+			<param name="application.name" value="FileBot" />
+			<param name="application.executable" value="filebot.launcher" />
+			<param name="application.identifier" value="${package.identifier}" />
+			<param name="application.icon" value="${dir.installer}/appbundle/filebot.icns" />
+			<param name="application.cert.appbundle" value="3rd Party Mac Developer Application: ${package.company}" />
+			<param name="application.cert.installer" value="3rd Party Mac Developer Installer: ${package.company}" />
+
+			<!-- MAS does not allow subtitle apps -->
+			<param name="application.mode" value="Rename|Episodes|SFV|Filter|List" />
+
+			<!-- libjfxwebkit.dylib cannot be deployed on the MAS due to deprecated dependencies -->
+			<param name="application.help" value="ask" />
+		</antcall>
+	</target>
+
+
+	<target name="appbundle-maspkg-subtitles">
+		<antcall target="appbundle-maspkg">
+			<param name="application.name" value="FileBot Subtitles" />
+			<param name="application.executable" value="filebot.subtitles.launcher" />
+			<param name="application.identifier" value="${package.identifier}.Subtitles" />
+			<param name="application.icon" value="${dir.installer}/appbundle/subtitles.icns" />
+			<param name="application.cert.appbundle" value="Developer ID Application: ${package.company}" />
+			<param name="application.cert.installer" value="Developer ID Installer: ${package.company}" />
+			<param name="application.mode" value="Subtitles" />
+			<param name="application.help" value="skip" />
+		</antcall>
+	</target>
+
+
+	<target name="appbundle-maspkg" depends="revision">
+		<property name="path.app" location="${dir.dist}/${application.name}.app" />
+		<property name="path.pkg" location="${dir.dist}/${application.name}_${application.version}_r${revision}.pkg" />
+
+		<property name="path.app.jre" location="${path.app}/Contents/PlugIns/jre-${jre.version}.jre" />
+		<property name="jre.path" location="${dir.cache}/jre-${jre.version}.jre/Contents/Home" />
+
+		<!-- fetch latest JRE -->
+		<exec executable="get-java.sh" dir="${dir.cache}" failonerror="yes" />
+		<untar src="${dir.cache}/jre-${jre.version}_osx-x64_bin.tar.gz" dest="${dir.cache}" compression="gzip" />
+
+
+		<!-- MAS validation does not like certain files included in the JRE -->
+		<delete verbose="yes" includeEmptyDirs="yes">
+			<fileset dir="${jre.path}">
+				<include name="**/bin/**" />
+				<include name="**/deploy/**" />
+				<include name="**/nibs/**" />
+				<include name="**/shortcuts/**" />
+
+				<!-- webkit uses deprecate font libraries which is not allowed in the app store  -->
+				<include name="**/libjfxwebkit.dylib" />
+			</fileset>
+		</delete>
+
+		<!-- MAS validation is a bit buggy and requires even libraries and frameworks to have a unique CFBundleIdentifier Collision -->
+		<replace file="${jre.path}/../Info.plist" token="com.oracle.java.${jre.version}.jre" value="${application.identifier}.jre" encoding="UTF-8" summary="true" />
+
+
+		<bundleapp jvmrequired="${jvm.version}" minimumsystemversion="${mac.version}" outputdirectory="${dir.dist}" executablename="${application.executable}" name="${application.name}" displayname="${application.name}" version="${revision}" shortversion="${application.version}" identifier="${application.identifier}" mainclassname="${main.class}" icon="${application.icon}" copyright="${tstamp.year} ${package.company}" applicationcategory="${mac.application.category}" highresolutioncapable="true" supportsautomaticgraphicsswitching="true" debug="true">
+			<classpath dir="${dir.dist}/lib" />
+			<librarypath dir="${dir.lib}/native/mac-x86_64" />
+
+			<arch name="x86_64" />
+			<runtime dir="${jre.path}">
+				<include name="**/*" />
+			</runtime>
+
+			<argument value="--mode" />
+			<argument value="${application.mode}" />
+
+			<!-- WORKING_DIR is sandbox data folder -->
+			<option value="-Dapplication.dir=Library/Application Support/User Data" />
+			<option value="-Dapplication.cache=Library/Caches/ehcache.disk.store" />
+			<option value="-Djava.io.tmpdir=Library/Caches/java.io.tmpdir" />
+
+			<option value="-Dnet.filebot.UserFiles.fileChooser=COCOA" />
+			<option value="-Dapplication.name=${application.name}" />
+			<option value="-Dapplication.help=${application.help}" />
+			<option value="-Dapplication.deployment=mas" />
+			<option value="-Dapplication.update=skip" />
+			<option value="-DuseExtendedFileAttributes=true" />
+			<option value="-DuseCreationDate=false" />
+
+			<option value="-Djava.net.useSystemProxies=true" />
+			<option value="-Dfile.encoding=UTF-8" />
+
+			<option value="-Djna.nosys=true" />
+			<option value="-Djna.nounpack=true" />
+			<option value="-Djna.boot.library.name=jnidispatch" />
+			<option value="-Djna.boot.library.path=$APP_ROOT/Contents/MacOS" />
+
+			<option value="-Djna.library.path=$APP_ROOT/Contents/MacOS" />
+			<option value="-Djava.library.path=$APP_ROOT/Contents/MacOS" />
+			<option value="-Dnet.filebot.AcoustID.fpcalc=$APP_ROOT/Contents/MacOS/fpcalc" />
+
+			<option value="-Dapple.laf.useScreenMenuBar=true" />
+			<option value="-Dapple.awt.application.name=${application.name}" />
+
+			<bundledocument role="viewer" handlerRank="none" contentTypes="public.movie" name="Video file" />
+			<bundledocument role="viewer" handlerRank="none" contentTypes="public.audio" name="Audio file" />
+			<bundledocument role="viewer" handlerRank="none" contentTypes="public.folder" name="Media folder" />
+		</bundleapp>
+
+		<!-- remove unused language resources -->
+		<delete verbose="yes" includeEmptyDirs="yes">
+			<fileset dir="${path.app}/Contents/Resources">
+				<include name="**.lproj/**" />
+				<exclude name="en.lproj/**" />
+			</fileset>
+		</delete>
+
+		<!-- fix broken symlink -->
+		<copy file="${jre.path}/lib/jli/libjli.dylib" tofile="${path.app.jre}/Contents/MacOS/libjli.dylib" overwrite="yes" verbose="yes" failonerror="yes" />
+
+		<!-- fix permissions (fpcalc and jspawnhelper be executable and signed with inherit entitlements) -->
+		<chmod perm="+x">
+			<fileset dir="${path.app}">
+				<include name="**/jspawnhelper" />
+				<include name="**/fpcalc" />
+				<include name="**/*.sh" />
+			</fileset>
+		</chmod>
+
+		<!-- JRE sign all jars, dylibs and executables -->
+		<property name="sign" value="--verbose --force --sign '${application.cert.appbundle}'" />
+		<property name="entitlements" value="--entitlements '${dir.installer}/appbundle/FileBot.entitlements'" />
+		<property name="entitlements.inherit" value="--entitlements '${dir.installer}/appbundle/inherit.entitlements'" />
+
+		<!-- sign helper tools with inherit entitlements -->
+		<apply executable="codesign" parallel="yes" failonerror="yes">
+			<arg line="${sign} ${entitlements.inherit}" />
+			<fileset dir="${path.app}">
+				<include name="**/jspawnhelper" />
+				<include name="**/fpcalc" />
+				<include name="**/*.dylib" />
+				<include name="**/*.jar" />
+				<include name="**/*.sh" />
+			</fileset>
+		</apply>
+
+		<!-- sign frameworks -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="${sign} ${entitlements.inherit} '${path.app.jre}'" />
+		</exec>
+
+		<!-- sign app -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="${sign} ${entitlements} '${path.app}'" />
+		</exec>
+
+		<!-- verify signature -->
+		<exec executable="codesign" failonerror="yes">
+			<arg line="--verbose --deep --verify '${path.app}'" />
+		</exec>
+
+		<!-- build package -->
+		<exec executable="productbuild" failonerror="yes">
+			<arg line="--component '${path.app}' /Applications '${path.pkg}' --sign '${application.cert.installer}'" />
+		</exec>
+
+		<!-- store as release build-->
+		<copy todir="${dir.release}" file="${path.pkg}" verbose="yes" />
+	</target>
+
+
+	<target name="snap" depends="revision">
+		<copy todir="${dir.dist}/snap/filebot/usr/lib/filebot/java">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+
+		<!-- include native binaries that are not available via apt -->
+		<copy todir="${dir.dist}/snap/filebot/usr/lib/filebot/amd64">
+			<fileset dir="${dir.lib}/native/linux-amd64" includes="libjnidispatch.so, lib7-Zip-JBinding.so" />
+		</copy>
+
+		<!-- copy files and resolve ant variables -->
+		<copy-replace todir="${dir.dist}/snap">
+			<fileset dir="${dir.installer}/snap" />
+		</copy-replace>
+		<chmod perm="+x" file="${dir.dist}/snap/filebot/filebot.sh" />
+
+		<exec executable="snapcraft" dir="${dir.dist}/snap" failonerror="yes">
+			<arg line="snap" />
+		</exec>
+	</target>
+
+
+	<target name="deb" description="Build Debian Linux packages" depends="revision">
+		<antcall target="deb-arch">
+			<param name="arch" value="amd64" />
+			<param name="deb.arch" value="amd64" />
+		</antcall>
+
+		<!-- arch i686 not allowed by deb specification, must be i386 for 32-bit x86 systems -->
+		<antcall target="deb-arch">
+			<param name="arch" value="i686" />
+			<param name="deb.arch" value="i386" />
+		</antcall>
+
+		<!-- arch armv7l not allowed by deb specification, must be armhf for 32-bit armv7l systems -->
+		<antcall target="deb-arch">
+			<param name="arch" value="armv7l" />
+			<param name="deb.arch" value="armhf" />
+		</antcall>
+	</target>
+
+
+	<target name="deb-arch">
+		<property name="dir.staging" location="${dir.dist}/deb/${arch}" />
+
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/deb" />
+		</copy-replace>
+
+		<!-- jdeb does not support tarfileset fullpath attribute (see https://github.com/tcurdt/jdeb/issues/245) -->
+		<copy file="${path.fatjar}" tofile="${dir.staging}/FileBot.jar" />
+
+		<jdeb destfile="${dir.dist}/${package.name}_${application.version}_${deb.arch}.deb" control="${dir.staging}/control" compression="xz" verbose="true">
+			<tarfileset prefix="/usr/share/filebot" dir="${dir.staging}" includes="*.jar" />
+			<tarfileset prefix="/usr/share/filebot" dir="${dir.staging}" includes="*.sh" filemode="755" />
+			<tarfileset prefix="/usr/share/filebot" dir="${dir.lib}/native/linux-${arch}" includes="fpcalc" filemode="755" />
+			<tarfileset prefix="/usr/share/filebot" dir="${dir.lib}/native/linux-${arch}" includes="*.so" />
+			<tarfileset prefix="/usr/share/icons/hicolor/scalable/apps" dir="${dir.installer}/icons" includes="filebot.svg" />
+			<tarfileset prefix="/usr/share" dir="${dir.staging}/share" includes="**/*.desktop" />
+		</jdeb>
+	</target>
+
+
+	<target name="appx" description="Build Windows 10 package" depends="revision">
+		<antcall target="appx-arch">
+			<param name="arch" value="x64" />
+			<param name="arch.env" value="AMD64" />
+			<param name="arch.jre" value="x64" />
+		</antcall>
+		<!--
+		<antcall target="appx-arch">
+			<param name="arch" value="x86" />
+			<param name="arch.env" value="x86" />
+			<param name="arch.jre" value="i586" />
+		</antcall>
+		-->
+	</target>
+
+
+	<target name="appx-arch">
+		<property name="dir.staging" location="${dir.dist}/appx/${arch}" />
+
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/appx" includes="*.exe, *.properties, *.ico, **/*.png" />
+			<fileset dir="${dir.lib}/native/win32-${arch}" />
+		</copy>
+		<copy todir="${dir.staging}/lib">
+			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+		</copy>
+
+		<!-- copy files and resolve ant variables -->
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/appx" includes="*.xml, *.ini" excludes="*.l4j.xml" />
+		</copy-replace>
+
+		<!-- fetch latest JRE -->
+		<!--<exec executable="powershell" dir="${dir.cache}" failonerror="yes">-->
+			<!--<env key="PROCESSOR_ARCHITECTURE" value="${arch.env}" />-->
+			<!--<arg line="get-java" />-->
+		<!--</exec>-->
+		<untar src="${dir.cache}/jre-${jre.version}_windows-${arch.jre}_bin.tar.gz" dest="${dir.staging}/jre" compression="gzip">
+			<patternset>
+				<exclude name="**/dtplugin/**" />
+				<exclude name="**/plugin2/**" />
+				<exclude name="**/jfxwebkit.dll" />
+			</patternset>
+			<cutdirsmapper dirs="1" />
+		</untar>
+
+
+		<!-- Workaround for VS2013 / CoInitialize hack (see http://mail.openjdk.java.net/pipermail/swing-dev/2018-February/008323.html) -->
+		<delete verbose="yes">
+			<fileset dir="${dir.staging}/jre" includes="**/*120*.dll" />
+		</delete>
+
+
+		<!-- package APPX -->
+		<exec executable="makepri" dir="${dir.staging}" failonerror="yes">
+			<arg line="createconfig /o /pv 10.0.0 /cf priconfig.xml /dq en-US" />
+		</exec>
+		<exec executable="makepri" dir="${dir.staging}" failonerror="yes">
+			<arg line="new /o /pr . /cf priconfig.xml /in ${microsoft.application.name}" />
+		</exec>
+		<exec executable="makeappx" dir="${dir.dist}" failonerror="yes">
+			<arg line="pack /v /o /d '${dir.staging}' /p ${release}_r${revision}_${arch}.appx" />
+		</exec>
+	</target>
+
+
+	<target name="msi" description="Build Windows Installer packages" depends="revision">
+		<antcall target="msi-arch">
+			<param name="arch" value="x64" />
+		</antcall>
+		<antcall target="msi-arch">
+			<param name="arch" value="x86" />
+		</antcall>
+	</target>
+
+
+	<target name="msi-arch">
+		<property name="dir.staging" location="${dir.dist}/msi/${arch}" />
+
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/msi" includes="*.exe, *.rtf, *.bmp" />
+		</copy>
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.lib}/native/win32-${arch}" />
+		</copy>
+		<copy todir="${dir.staging}">
+			<fileset dir="${dir.installer}/icons" includes="*.ico" />
+		</copy>
+		<copy-replace todir="${dir.staging}">
+			<fileset dir="${dir.installer}/msi" includes="*.wix, *.ini, *.properties" />
+		</copy-replace>
+
+		<exec executable="candle" dir="${dir.staging}" failonerror="true">
+			<arg line="filebot.wix -out msi.wixobj" />
+		</exec>
+		<exec executable="light" dir="${dir.staging}" failonerror="true">
+			<arg line="msi.wixobj -sval -ext WixUIExtension -out '${dir.dist}/${release}_${arch}.msi'" />
+		</exec>
+	</target>
+
+
+	<target name="portable" description="Build portable package" depends="revision">
+		<tar destfile="${dir.dist}/${release}-portable.tar.xz" compression="xz" longfile="posix" encoding="utf-8">
+			<tarfileset file="${path.fatjar}" fullpath="FileBot.jar" />
+			<tarfileset dir="${dir.installer}/portable" includes="*.sh" filemode="755" />
+
+			<!-- include native libraries for all supported platforms -->
+			<tarfileset prefix="lib/armv7l" dir="${dir.lib}/native/linux-armv7l" includes="*.so" />
+			<tarfileset prefix="lib/aarch64" dir="${dir.lib}/native/linux-armv8" includes="*.so" />
+			<tarfileset prefix="lib/i686" dir="${dir.lib}/native/linux-i686" includes="*.so" />
+			<tarfileset prefix="lib/x86_64" dir="${dir.lib}/native/linux-amd64" includes="*.so" />
+
+			<!-- include maintainer public key -->
+			<tarfileset dir="${dir.installer}/gpg" includes="maintainer.pub" />
+		</tar>
+	</target>
+
+
+	<target name="spk" description="Build Synology NAS package" depends="revision">
+		<spk destdir="${dir.dist}" name="${package.name}" version="${application.version}" arch="noarch" compression="xz">
+			<info name="displayname" value="${application.name}" />
+			<info name="description" value="${package.description}" />
+			<info name="maintainer" value="${package.project}" />
+			<info name="maintainer_url" value="${package.homepage}" />
+			<info name="distributor" value="${package.project}" />
+			<info name="distributor_url" value="${package.homepage}" />
+			<info name="support_url" value="${link.help.synology}" />
+			<info name="helpurl" value="${link.help.manpage}" />
+			<info name="firmware" value="6.0" />
+			<info name="startable" value="no" />
+			<info name="silent_install" value="yes" />
+			<info name="silent_uninstall" value="yes" />
+			<info name="silent_upgrade" value="yes" />
+			<info name="thirdparty" value="yes" />
+
+			<!-- Dependencies are troublesome for some users because they cannot be skipped or ignored (i.e. DSM does not support optional or recommended dependencies) -->
+			<!-- <info name="start_dep_services" value="ssh" /> -->
+			<!-- <info name="install_dep_packages" value="oracle-java" /> -->
+
+			<icon size="72" file="${dir.installer}/icons/icon72.png" />
+			<icon size="256" file="${dir.installer}/icons/icon256.png" />
+
+			<scripts dir="${dir.installer}/spk/scripts" filemode="755" />
+			<package dir="${dir.installer}/spk/package" includes="*.sh" filemode="755" />
+			<package file="${path.fatjar}" fullpath="FileBot.jar" />
+
+			<!-- include native libraries for all supported platforms -->
+			<package prefix="lib/armv7l" dir="${dir.lib}/native/linux-armv7l" includes="*.so" />
+			<package prefix="lib/armv8" dir="${dir.lib}/native/linux-armv8" includes="*.so" />
+			<package prefix="lib/i686" dir="${dir.lib}/native/linux-i686" includes="*.so" />
+			<package prefix="lib/x86_64" dir="${dir.lib}/native/linux-amd64" includes="*.so" />
+
+			<codesign secring="${dir.installer}/gpg/secring.gpg" keyid="${gpg.key}" password="${gpg.pwd}" />
+		</spk>
+	</target>
+
+
+	<target name="build" depends="revision">
+		<!-- copy dependencies -->
+		<copy todir="${dir.dist}/lib" flatten="yes" verbose="yes">
+			<fileset dir="${dir.lib}/ivy/jar">
+				<include name="ehcache.jar" />
+				<include name="miglayout-core.jar" />
+				<include name="miglayout-swing.jar" />
+				<include name="glazedlists_java16.jar" />
+				<include name="controlsfx.jar" />
+				<include name="rsyntaxtextarea.jar" />
+				<include name="lanterna.jar" />
+				<include name="xz.jar" />
+				<include name="sevenzipjbinding.jar" />
+				<include name="commons-io.jar" />
+				<include name="commons-vfs2.jar" />
+				<include name="jaxb-api.jar" />
+				<include name="jaxb-impl.jar" />
+				<include name="activation.jar" />
+				<include name="junrar.jar" />
+				<include name="jna.jar" />
+				<include name="jna-platform.jar" />
+				<include name="streamex.jar" />
+				<include name="icu4j.jar" />
+				<include name="language-detector.jar" />
+				<include name="metadata-extractor.jar" />
+				<include name="xmpcore.jar" />
+				<include name="commons-logging.jar" />
+				<include name="slf4j-api.jar" />
+				<include name="slf4j-jdk14.jar" />
+				<include name="groovy-all.jar" />
+				<include name="ivy.jar" />
+				<include name="jsoup.jar" />
+				<include name="ant.jar" />
+				<include name="ant-launcher.jar" />
+				<include name="ant-commons-net.jar" />
+				<include name="ant-jsch.jar" />
+				<include name="ant-javamail.jar" />
+				<include name="commons-net.jar" />
+				<include name="jsch.jar" />
+				<include name="mail.jar" />
+			</fileset>
+			<fileset dir="${dir.lib}/ivy/bundle">
+				<include name="args4j.jar" />
+				<include name="json-io.jar" />
+				<include name="guava.jar" />
+			</fileset>
+			<fileset dir="${dir.lib}/jars">
+				<include name="xmlrpc.jar" />
+				<include name="ObjCBridge.jar" />
+				<include name="simmetrics.jar" />
+				<include name="jacksum.jar" />
+			</fileset>
+		</copy>
+
+		<!-- compile -->
+		<javac srcdir="${dir.source}" destdir="${dir.build}" release="${jvm.version}" encoding="utf-8" debug="yes" debuglevel="lines,vars,source" includeAntRuntime="no">
+			<classpath>
+				<fileset dir="${dir.dist}/lib" />
+			</classpath>
+		</javac>
+
+		<!-- copy property files -->
+		<copy-replace todir="${dir.build}">
+			<fileset dir="${dir.source}" includes="**/*.properties" />
+		</copy-replace>
+
+		<!-- copy resources -->
+		<copy todir="${dir.build}">
+			<fileset dir="${dir.source}">
+				<exclude name="**/*.java" />
+				<exclude name="**/*.properties" />
+			</fileset>
+		</copy>
+	</target>
+
+
+	<target name="clean" description="Delete build folders">
+		<delete dir="${dir.dist}" />
+		<delete dir="${dir.build}" />
+	</target>
+
+
+	<target name="website-docs" depends="revision">
+		<javadoc destdir="${dir.dist}/website/docs" linksource="yes" access="public" classpathref="lib.classpath" encoding="UTF-8" charset="UTF-8" windowtitle="${application.name}" noindex="yes" nohelp="yes" notree="yes" nodeprecated="yes" nonavbar="yes">
+			<fileset dir="${dir.source}" includesfile="${dir.website}/docs/includes.fileset" />
+			<doctitle>${application.name} ${application.version}</doctitle>
+			<bottom>${application.name} ${application.version} (r${revision}) built on ${tstamp.date}</bottom>
+			<link href="http://docs.oracle.com/javase/${jre.version}/docs/api/" />
+			<link href="http://docs.groovy-lang.org/latest/html/api/" />
+		</javadoc>
+	</target>
+
+
+	<target name="revision" depends="init">
+		<exec executable="git" outputproperty="revision" failonerror="true">
+			<arg line="rev-list --count master" />
+		</exec>
+		<echo>Revision: ${revision}</echo>
+	</target>
+
+
+	<target name="init">
+		<mkdir dir="${dir.build}" />
+		<mkdir dir="${dir.dist}" />
+		<mkdir dir="${dir.release}" />
+		<mkdir dir="${dir.cache}" />
+
+		<path id="lib.classpath">
+			<fileset dir="${dir.lib}" includes="**/*.jar" excludes="**/*-jdk14.jar" />
+		</path>
+		<taskdef resource="net/filebot/ant/spk/antlib.xml" classpathref="lib.classpath" />
+		<taskdef resource="org/vafer/jdeb/ant/antlib.xml" classpathref="lib.classpath" />
+		<taskdef name="bundleapp" classname="com.oracle.appbundler.AppBundlerTask" classpathref="lib.classpath" />
+	</target>
+
+
+	<target name="stage-release">
+		<!-- ensure clean release dir -->
+		<delete dir="${dir.release}" />
+		<mkdir dir="${dir.release}" />
+
+		<!-- prepare release packages -->
+		<copy todir="${dir.release}" verbose="yes">
+			<fileset dir="${dir.dist}">
+				<include name="*.tar.xz" />
+				<include name="*.msi" />
+				<include name="*.deb" />
+				<include name="*.spk" />
+			</fileset>
+		</copy>
+
+		<!-- require gpg signatures for all installer packages -->
+		<gpg-sign>
+			<fileset dir="${dir.release}">
+				<exclude name="*.spk" />
+			</fileset>
+		</gpg-sign>
+
+
+		<checksum algorithm="SHA-256" pattern="{0}	{1}" todir="${dir.cache}/${release}/sha">
+			<fileset dir="${dir.release}">
+				<include name="*.gpg" />
+				<include name="*.spk" />
+			</fileset>
+		</checksum>
+		<concat destfile="${dir.release}/README.md" overwrite="true" eol="unix" outputencoding="utf-8">
+			<fileset file="${dir.installer}/ant/digest.head.md" />
+			<fileset dir="${dir.cache}/${release}/sha" />
+			<fileset file="${dir.installer}/ant/digest.tail.md" />
+		</concat>
+
+
+		<!-- include source tarball -->
+		<tar destfile="${dir.release}/${package.name}-${application.version}-src.tar.xz" compression="xz" longfile="posix" encoding="utf-8">
+			<tarfileset dir="${dir.source}" />
+		</tar>
+	</target>
+
+
+	<target name="deploy-release" depends="stage-release" description="Upload release files to SourceForge.net FRS">
+		<property name="mirror" location="${dir.cache}/${release}/FRS" />
+
+		<copy todir="${mirror}/${package.name}/${release}" verbose="yes">
+			<fileset dir="${dir.release}">
+				<include name="*.gpg" />
+				<include name="*.spk" />
+				<include name="*-src.tar.xz" />
+				<include name="*.md" />
+			</fileset>
+		</copy>
+
+		<release-deploy todir="${deploy.release.mirror}">
+			<fileset dir="${mirror}" includes="**/*.md" />
+			<fileset dir="${mirror}" includes="**/*-src.tar.xz" />
+			<fileset dir="${mirror}" includes="**/*.spk" />
+			<fileset dir="${mirror}" includes="**/*.gpg" />
+		</release-deploy>
+	</target>
+
+
+	<target name="deploy-jar" depends="fatjar" description="Build and deploy the latest jar">
+		<xz src="${path.fatjar}" destfile="${dir.release}/FileBot.jar.xz" />
+		<gpg-sign>
+			<fileset dir="${dir.release}" includes="*.jar.xz" />
+		</gpg-sign>
+		<release-deploy todir="${deploy.release}/${package.name}/latest">
+			<fileset dir="${dir.release}" includes="*.jar.xz.gpg" />
+		</release-deploy>
+	</target>
+
+
+	<target name="deploy-synology" description="Update Synology Package Source" depends="init">
+		<mkdir dir="${dir.dist}/syno" />
+
+		<!-- merge all filebot related packages into a single package source file -->
+		<package-source file="${dir.dist}/syno/index.json">
+			<keyring file="${dir.installer}/gpg/FileBot.pub" />
+			<spk file="${dir.release}/${package.name}-${application.version}-noarch.spk">
+				<info name="link" value="https://downloads.sourceforge.net/project/filebot/filebot/${release}/${package.name}-${application.version}-noarch.spk" />
+				<thumbnail url="https://www.filebot.net/syno/filebot-thumbnail.png" />
+				<snapshot url="https://www.filebot.net/syno/filebot-snapshot.png" />
+			</spk>
+			<source url="https://raw.githubusercontent.com/filebot/filebot-node/master/spksrc.json" />
+			<source url="https://raw.githubusercontent.com/rednoah/java-installer/master/spksrc.json" />
+			<source url="https://raw.githubusercontent.com/rednoah/ant-installer/master/spksrc.json" />
+		</package-source>
+
+		<!-- upload -->
+		<release-deploy todir="${deploy.release}">
+			<fileset dir="${dir.dist}" includes="syno/**" />
+		</release-deploy>
+	</target>
+
+
+	<target name="deploy-website" description="Upload website resources" depends="revision">
+		<!-- copy image resources -->
+		<copy todir="${dir.dist}/website/resources" preservelastmodified="yes" verbose="yes" flatten="true">
+			<fileset dir="${dir.source}/net/filebot/resources">
+				<include name="*.png" />
+			</fileset>
+		</copy>
+
+		<!-- copy static website resources -->
+		<copy todir="${dir.dist}/website" preservelastmodified="yes" verbose="yes">
+			<fileset dir="${dir.website}">
+				<include name=".htaccess" />
+				<include name="*.html" />
+				<include name="*.php" />
+				<include name="*.json" />
+				<include name="*.xml" />
+				<include name="*.css" />
+				<include name="*.js" />
+				<include name="*.png" />
+				<include name="*.ico" />
+				<include name="*.txt" />
+				<include name="syno/**" />
+				<include name="images/**" />
+				<include name="screenshots/**" />
+				<include name="getting-started/**" />
+			</fileset>
+		</copy>
+
+		<!-- copy files and resolve ant variables -->
+		<copy-replace todir="${dir.dist}/website">
+			<fileset dir="${dir.website}">
+				<include name="*.html" />
+				<include name="*.php" />
+			</fileset>
+		</copy-replace>
+
+		<!-- upload -->
+		<release-deploy todir="${deploy.website}">
+			<fileset dir="${dir.dist}/website">
+				<modified>
+					<param name="cache.cachefile" value="${dir.cache}/scp.cache" />
+				</modified>
+			</fileset>
+		</release-deploy>
+	</target>
+
+
+	<target name="eclipse-properties-builder">
+		<exec executable="git" outputproperty="revision" failonerror="true">
+			<arg line="rev-list --count master" />
+		</exec>
+		<copy-replace todir="bin">
+			<fileset dir="source" includes="**/*.properties" />
+		</copy-replace>
+	</target>
+
+</project>

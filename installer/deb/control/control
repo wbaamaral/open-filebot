@@ -1,0 +1,11 @@
+Package: @{package.name}
+Version: @{application.version}
+Architecture: @{deb.arch}
+Maintainer: @{package.developer} <@{package.maintainer}>
+Description: @{package.synopsis}
+ @{package.description}
+Homepage: @{package.homepage}
+Section: utils
+Priority: extra
+Suggests: openjdk-8-jre, openjfx, mediainfo, libchromaprint-tools
+Enhances: nautilus-actions
