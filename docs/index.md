@@ -34,10 +34,10 @@ O **Open FileBot** é a versão comunitária e continuada do renomado FileBot, m
 
 Acesse a página de **[Lançamentos / Releases no GitHub](https://github.com/wbaamaral/open-filebot/releases)** e baixe o pacote de sua preferência:
 
-* **Pacote Portátil Linux (`FileBot_4.8.0-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
-* **Arquivo Executável Java (`FileBot_4.8.0.jar`)**: Execute em qualquer sistema com Java 25 instalado:
+* **Pacote Portátil Linux (`FileBot_4.9.0-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
+* **Arquivo Executável Java (`FileBot_4.9.0.jar`)**: Execute em qualquer sistema com Java 25 instalado:
   ```bash
-  java -jar FileBot_4.8.0.jar
+  java -jar FileBot_4.9.0.jar
   ```
 
 ---
