@@ -77,6 +77,9 @@
 		<delete dir="${dir.lib}/ivy" />
 		<ivy:retrieve pattern="${dir.lib}/ivy/[type]/[artifact].[ext]" />
 
+		<!-- ensure xz compression library is available to Ant classpath for tar task -->
+		<copy file="${dir.lib}/ivy/jar/xz.jar" todir="${user.home}/.ant/lib" failonerror="false" />
+
 		<antcall target="resolve-import-native">
 			<param name="arch" value="mac-x86_64" />
 			<param name="arch.jna" value="darwin" />
@@ -189,11 +192,6 @@
 			</zipfileset>
 			<zipfileset src="${dir.dist}/lib/glazedlists_java16.jar">
 				<include name="ca/odell/glazedlists/**" />
-			</zipfileset>
-			<zipfileset src="${dir.dist}/lib/controlsfx.jar">
-				<include name="org/controlsfx/dialog/**" />
-				<include name="impl/org/controlsfx/i18n/**" />
-				<include name="controlsfx.properties" />
 			</zipfileset>
 			<zipfileset src="${dir.dist}/lib/rsyntaxtextarea.jar">
 				<include name="org/fife/**" />

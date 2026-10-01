@@ -18,7 +18,7 @@ Este inventário serve como especificação e guia de implementação para as pr
 ### 1.2 OpenSubtitles REST API (api.opensubtitles.com)
 * **Contexto**: O serviço clássico XML-RPC (`api.opensubtitles.org/xml-rpc`) foi oficialmente descontinuado pelo OpenSubtitles no início de 2024.
 * **Necessidade**:
-  * Substituir o cliente XML-RPC ([`OpenSubtitlesXmlRpc.java`](file:///auxiliar/desenvolvimento/filebot/source/net/filebot/web/OpenSubtitlesXmlRpc.java)) pela nova REST API (`https://api.opensubtitles.com/api/v1/`).
+  * Substituir o cliente XML-RPC ([`OpenSubtitlesXmlRpc.java`](file:///home/wbaamaral/acervo/projetos/filebot/source/net/filebot/web/OpenSubtitlesXmlRpc.java)) pela nova REST API (`https://api.opensubtitles.com/api/v1/`).
   * Autenticação via `Api-Key` no cabeçalho HTTP e `User-Agent` registrado.
   * Suporte a download de legendas em formato `.srt` e `.vtt` com validação de hash e cotas por usuário (login OAuth2/Bearer).
 

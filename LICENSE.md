@@ -1,27 +1,23 @@
-# MODIFIED DON'T BE A DICK PUBLIC LICENSE
+# LICENÇA PÚBLICA "NÃO SEJA UM BABACA" MODIFICADA
+*(MODIFIED DON'T BE A DICK PUBLIC LICENSE)*
 
-> Version 1.0, January 2018
+> Versão 1.0, Janeiro de 2018  
+> Copyright (C) 2018 Reinhard Pointner  
 
-> Copyright (C) 2018 Reinhard Pointner
+Todos têm permissão para copiar e distribuir cópias literais ou modificadas deste documento de licença.
 
- Everyone is permitted to copy and distribute verbatim or modified
- copies of this license document.
+> LICENÇA PÚBLICA "NÃO SEJA UM BABACA"  
+> TERMOS E CONDIÇÕES PARA CÓPIA, DISTRIBUIÇÃO E MODIFICAÇÃO  
 
-> DON'T BE A DICK PUBLIC LICENSE
-> TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+1. Faça o que quiser com a obra original, apenas não seja um babaca.
 
- 1. Do whatever you like with the original work, just don't be a dick.
+   Ser um babaca inclui — mas não está limitado a — os seguintes casos:
 
-    Being a dick includes - but is not limited to - the following instances:
+   * **1a.** Violação explícita de direitos autorais: não copie isto simplesmente mudando apenas o nome do projeto.
+   * **1b.** Vender ou publicar a obra original não modificada sem nenhum trabalho significativo realizado: isso é REALMENTE ser um babaca.
+   * **1c.** Modificar o trabalho original para conter conteúdo prejudicial ou malicioso oculto: isso faz de você um tremendo babaca.
+   * **1d.** Publicar binários ou clones concorrentes com o objetivo de sabotar a capacidade do autor original de monetizar seu trabalho: isso seria uma atitude de babaca.
 
-        1a. Outright copyright infringement - Don't just copy this and change the name.
-        1b. Selling or publishing the unmodified original with no meaningful work done what-so-ever, that's REALLY being a dick.
-        1c. Modifying the original work to contain hidden harmful content. That would make you a PROPER dick.
-        1d. Publishing binaries or competing clones that undermine the ability of the original author to make money from his work. That would be a DICK move.
+2. Se você ficar rico por meio de modificações, trabalhos/serviços relacionados ou prestando suporte à obra original, compartilhe o reconhecimento. Apenas um babaca lucraria muito em cima deste trabalho sem pagar uma cerveja para o(s) criador(es) da obra original.
 
- 2. If you become rich through modifications, related works/services, or supporting the original work,
- share the love. Only a dick would make loads off this work and not buy the original work's 
- creator(s) a pint.
- 
- 3. Code is provided with no warranty. Using somebody else's code and bitching when it goes wrong makes 
- you a DONKEY dick. Fix the problem yourself. A non-dick would submit the fix back or submit a bug report.
+3. O código é fornecido sem nenhuma garantia. Usar o código de outra pessoa e reclamar agressivamente quando algo der errado faz de você um completo babaca. Corrija o problema você mesmo. Alguém que não é babaca enviará a correção de volta ou abrirá um relatório de bug educado e detalhado.

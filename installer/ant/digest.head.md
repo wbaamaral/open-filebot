@@ -1,11 +1,11 @@
-# Release Notes
-Please see [Announcements and Releases](https://www.filebot.net/forums/viewforum.php?f=7) in the [FileBot Forums](https://www.filebot.net/forums/).
+# Notas de Lançamento (Release Notes)
+Para anúncios e discussões, consulte [Anúncios e Releases](https://www.filebot.net/forums/viewforum.php?f=7) nos fóruns comunitários.
 
-## Windows 10
-__FileBot for Windows 10__ is available on the [Windows Store](https://get.filebot.net/windows/).
+## Windows 10 / 11
+O pacote portátil e os instaladores MSI estão disponíveis nas seções de release do projeto.
 
-## macOS
-__FileBot for Mac__ is available on the [Mac App Store](https://get.filebot.net/mac/).
+## Linux
+Distribuição portátil pronta para uso disponível em formato `.tar.xz` e pacotes `.deb`.
 
-# SHA-256 checksums
+# Checksums SHA-256
 ```

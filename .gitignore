@@ -13,3 +13,8 @@ lib/ivy/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Ant autocompletion cache
+.ant-targets*
+
+

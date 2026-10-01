@@ -38,7 +38,13 @@ EXTRACTOR="ApacheVFS"                   # use Apache Commons VFS2 with junrar pl
 # EXTRACTOR="SevenZipNativeBindings"    # use the lib7-Zip-JBinding.so native library
 
 # select application data folder
-APP_DATA="$APP_ROOT/data"
+if [ -w "$APP_ROOT/data" ] || [ ! -e "$APP_ROOT/data" -a -w "$APP_ROOT" ]; then
+	APP_DATA="$APP_ROOT/data"
+	USER_HOME="$APP_DATA"
+else
+	APP_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/filebot"
+	USER_HOME="$HOME"
+fi
 mkdir -p "$APP_DATA/tmp"
 
 # resolve java executable (ensure Java 25+)
@@ -51,7 +57,9 @@ if [ "$JAVA_VER" = "1" ]; then
 	JAVA_VER=$("$JAVA" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f2)
 fi
 if [ -z "$JAVA_VER" ] || [ "$JAVA_VER" -lt 25 ] 2>/dev/null; then
-	if [ -x "$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java" ]; then
+	if [ -x "$HOME/.sdkman/candidates/java/current/bin/java" ]; then
+		JAVA="$HOME/.sdkman/candidates/java/current/bin/java"
+	elif [ -x "$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java" ]; then
 		JAVA="$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java"
 	elif [ -d "$HOME/.sdkman/candidates/java" ]; then
 		SDKMAN_JAVA=$(find "$HOME/.sdkman/candidates/java" -maxdepth 2 -name "java" -path "*/bin/java" 2>/dev/null | grep -E "25\." | head -n 1)
@@ -85,7 +93,7 @@ exec "$JAVA" @{java.application.options} \
 	-Djava.library.path="$PACKAGE_LIBRARY_PATH:$LD_LIBRARY_PATH" \
 	-Dnet.filebot.AcoustID.fpcalc="$FPCALC_BIN" \
 	-Dapplication.dir="$APP_DATA" \
-	-Duser.home="$APP_DATA" \
+	-Duser.home="$USER_HOME" \
 	-Djava.io.tmpdir="$APP_DATA/tmp" \
 	-Djava.util.prefs.PreferencesFactory=net.filebot.util.prefs.FilePreferencesFactory \
 	-Dnet.filebot.util.prefs.file="$APP_DATA/prefs.properties" \

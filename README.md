@@ -1,32 +1,70 @@
 # FileBot
 
-This is a fork of the official FileBot source code on **23 Mar 2018** for version **4.8.0**.
-The repo has unfortunately since been taken offline. It appears like the developer [rednoah](https://github.com/rednoah) has decided to try and make money off this software which originally rose in popularity due to its open source nature.
+Este projeto é um fork do código-fonte oficial do **FileBot** a partir do marco de **23 de março de 2018** para a versão **4.8.0**, preservado e modernizado como software de código aberto (*open-source*).
 
-rednoah has:
-* Added nagware to the original software to promote sales
-* Made it intentionally harder to build the software
-* Censored/removed posts on forums they moderate
-* Deceived the community who supported the software
-* Finally, removed the open source code from Github.
+O repositório original foi retirado do ar após o mantenedor original ([rednoah](https://github.com/rednoah)) fechar o código-fonte para comercializar o software sob um modelo proprietário com licenças pagas, após anos de apoio e colaboração da comunidade aberta.
 
-Stop making absurd excuses like "there were no other contributors" which is a complete lie. Just say you want to make money, there is nothing wrong with that but you can't seem to admit it.
+O mantenedor original realizou ações que prejudicaram a comunidade:
+* Adicionou *nagware* (avisos invasivos de compra) ao software original para forçar vendas;
+* Tornou propositalmente mais difícil compilar o software a partir do código-fonte;
+* Censurou e removeu postagens de usuários nos fóruns oficiais sob sua moderação;
+* Enganou a comunidade que apoiou e divulgou o projeto ao longo dos anos;
+* Por fim, removeu o repositório público de código aberto do GitHub sob a justificativa de que "não havia outros colaboradores".
 
-# Original Fork Point
-If you are interested in the original fork point check out the [fork-point](../../tree/fork-point/) branch.
+Este repositório existe para manter o FileBot verdadeiramente livre, acessível e sob evolução contínua da comunidade.
 
-# Newer Fork
-Looks like another newer fork is available here: https://github.com/deleted-repo/filebot
+---
 
-# Building
-It is possible to build the source code as a standalone jar or as an self signed UWP app.
+## 🚀 Estado Atual e Modernização
 
-# Binaries/Releases
-Check out the releases for some releases.
+Este fork foi ativamente atualizado e modernizado com foco em compatibilidade e longevidade:
 
-Also check out this repo more up to date sources/releases: https://github.com/barry-allen07/FB-Mod
+* **Compatibilidade com Java 25 (LTS)**: Todo o código-fonte, opções de compilação e flags de inicialização da JVM foram adaptados para o Java 25 moderno (`--enable-native-access`, ajustes de reflexão e aberturas modulares `--add-opens`).
+* **Desacoplamento JavaFX -> Swing Puro**: A dependência legada do ecossistema JavaFX (como o painel *Getting Started*) foi desacoplada e convertida para componentes Swing nativos de alto desempenho, eliminando dependências externas desnecessárias.
+* **Correções de Estabilidade e XML**: Remoção de APIs descontinuadas do JDK (como referências diretas ao JAXB em módulos de histórico) substituídas por parsing padrão DOM.
+* **Distribuição Portátil Pronta para Uso**: Inclusão de alvo no Ant para geração de pacote portátil Linux completo com bibliotecas nativas (`fpcalc`, 7-Zip, JNA) e launcher executável [./filebot](file:///home/wbaamaral/acervo/projetos/filebot/filebot) na raiz.
 
-# Licence
-The FileBot source code is available for your convenience.
+---
 
-I will keep this repo under the same licence (which was modified for more greed) [MODIFIED DON'T BE A DICK PUBLIC LICENSE](../master/LICENSE.md).
+## 🛠️ Compilação e Distribuição
+
+O processo de compilação é automatizado via **Apache Ant** e **Apache Ivy**.
+
+Para instruções completas passo a passo sobre como instalar ferramentas via SDKMAN, configurar o Ivy, baixar dependências e compilar os pacotes de distribuição, consulte o guia dedicado:
+
+👉 **[Guia Completo de Compilação e Distribuição (docs/COMPILACAO.md)](file:///home/wbaamaral/acervo/projetos/filebot/docs/COMPILACAO.md)**
+
+### Resumo Rápido dos Comandos:
+
+```bash
+# 1. Baixar o conector do Ivy para o Ant (uma única vez)
+mkdir -p ~/.ant/lib && curl -fsSL https://repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.2/ivy-2.5.2.jar -o ~/.ant/lib/ivy.jar
+
+# 2. Baixar todas as dependências e binários nativos
+ant resolve
+
+# 3. Gerar o pacote de distribuição portátil (Linux)
+ant portable
+
+# 4. Executar diretamente
+./filebot
+```
+
+---
+
+## 📚 Documentação do Projeto
+
+* 📖 **[docs/COMPILACAO.md](file:///home/wbaamaral/acervo/projetos/filebot/docs/COMPILACAO.md)**: Guia passo a passo de configuração do ambiente, resolução de dependências e criação de pacotes (`portable`, `fatjar`, `deb`, `msi`, `spk`).
+* 📋 **[docs/FUTURE_FEATURES.md](file:///home/wbaamaral/acervo/projetos/filebot/docs/FUTURE_FEATURES.md)**: Catálogo detalhado das novas APIs (TheTVDB v4, OpenSubtitles REST, TMDb TV) e features modernas mapeadas para implementação futura no projeto.
+
+---
+
+## 🌿 Ponto de Origem do Fork
+
+Caso tenha interesse no código exatamente como estava no momento do fork original, consulte o branch `fork-point`.
+
+---
+
+## ⚖️ Licença
+
+O código-fonte do FileBot permanece disponível para uso comunitário sob os termos da licença modificada contida no arquivo [LICENSE.md](file:///home/wbaamaral/acervo/projetos/filebot/LICENSE.md).

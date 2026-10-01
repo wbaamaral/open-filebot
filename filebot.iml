@@ -29,13 +29,10 @@
     <libelement value="file://lib/ivy/jar/language-detector.jar" />
     <libelement value="file://lib/ivy/bundle/guava.jar" />
     <libelement value="file://lib/ivy/jar/streamex.jar" />
-    <libelement value="file://lib/ivy/jar/controlsfx.jar" />
     <libelement value="file://lib/ivy/jar/lanterna.jar" />
     <libelement value="file://lib/ivy/jar/metadata-extractor.jar" />
     <libelement value="file://lib/ivy/jar/xmpcore.jar" />
     <libelement value="file://lib/ivy/jar/glazedlists_java16.jar" />
-    <libelement value="file://lib/ivy/jar/jaxb-api.jar" />
-    <libelement value="file://lib/ivy/jar/jaxb-impl.jar" />
     <libelement value="file://lib/ivy/jar/activation.jar" />
     <src_description expected_position="0">
       <src_folder value="file://$MODULE_DIR$/source" expected_position="0" />
