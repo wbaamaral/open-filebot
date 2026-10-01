@@ -680,19 +680,51 @@
 	</target>
 
 
-	<target name="portable" description="Build portable package" depends="revision">
+	<target name="portable" description="Build portable package" depends="fatjar">
+		<property name="dir.portable" location="${dir.dist}/${release}-portable" />
+		<delete dir="${dir.portable}" />
+		<mkdir dir="${dir.portable}" />
+		<mkdir dir="${dir.portable}/data" />
+
+		<!-- copy fatjar -->
+		<copy file="${path.fatjar}" tofile="${dir.portable}/FileBot.jar" />
+
+		<!-- copy and resolve ant variables in launcher script -->
+		<copy-replace todir="${dir.portable}">
+			<fileset dir="${dir.installer}/portable" includes="filebot.sh" />
+		</copy-replace>
+		<copy file="${dir.portable}/filebot.sh" tofile="${dir.portable}/filebot" />
+		<chmod perm="755">
+			<fileset dir="${dir.portable}" includes="*.sh, filebot" />
+		</chmod>
+
+		<!-- include native libraries for all supported platforms -->
+		<copy todir="${dir.portable}/lib/armv7l">
+			<fileset dir="${dir.lib}/native/linux-armv7l" includes="*.so, fpcalc" />
+		</copy>
+		<copy todir="${dir.portable}/lib/aarch64">
+			<fileset dir="${dir.lib}/native/linux-armv8" includes="*.so, fpcalc" />
+		</copy>
+		<copy todir="${dir.portable}/lib/i686">
+			<fileset dir="${dir.lib}/native/linux-i686" includes="*.so, fpcalc" />
+		</copy>
+		<copy todir="${dir.portable}/lib/x86_64">
+			<fileset dir="${dir.lib}/native/linux-amd64" includes="*.so, fpcalc" />
+		</copy>
+		<chmod perm="755">
+			<fileset dir="${dir.portable}/lib" includes="**/fpcalc" />
+		</chmod>
+
+		<!-- archive as tar.xz -->
 		<tar destfile="${dir.dist}/${release}-portable.tar.xz" compression="xz" longfile="posix" encoding="utf-8">
-			<tarfileset file="${path.fatjar}" fullpath="FileBot.jar" />
-			<tarfileset dir="${dir.installer}/portable" includes="*.sh" filemode="755" />
+			<tarfileset dir="${dir.portable}" filemode="755" includes="*.sh, filebot, lib/**/fpcalc" />
+			<tarfileset dir="${dir.portable}" excludes="*.sh, filebot, lib/**/fpcalc" />
+		</tar>
 
-			<!-- include native libraries for all supported platforms -->
-			<tarfileset prefix="lib/armv7l" dir="${dir.lib}/native/linux-armv7l" includes="*.so" />
-			<tarfileset prefix="lib/aarch64" dir="${dir.lib}/native/linux-armv8" includes="*.so" />
-			<tarfileset prefix="lib/i686" dir="${dir.lib}/native/linux-i686" includes="*.so" />
-			<tarfileset prefix="lib/x86_64" dir="${dir.lib}/native/linux-amd64" includes="*.so" />
-
-			<!-- include maintainer public key -->
-			<tarfileset dir="${dir.installer}/gpg" includes="maintainer.pub" />
+		<!-- archive as tar.gz -->
+		<tar destfile="${dir.dist}/${release}-portable.tar.gz" compression="gzip" longfile="posix" encoding="utf-8">
+			<tarfileset dir="${dir.portable}" filemode="755" includes="*.sh, filebot, lib/**/fpcalc" />
+			<tarfileset dir="${dir.portable}" excludes="*.sh, filebot, lib/**/fpcalc" />
 		</tar>
 	</target>
 

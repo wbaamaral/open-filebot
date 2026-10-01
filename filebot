@@ -1,0 +1,3 @@
+#!/bin/sh
+PRG_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$PRG_DIR/dist/FileBot_4.8.0-portable/filebot" "$@"
