@@ -56,10 +56,12 @@ public class FileBotMenuBar {
 			String message = String.format(
 				"<html><b style='font-size:13pt'>Open FileBot %s</b><br><br>"
 				+ "Versão Comunitária Open-Source modernizada para Java 25.<br><br>"
-				+ "<b>Criador Original:</b> Reinhard Pointner (rednoah)<br>"
+				+ "<b>Mantenedor / Fork:</b> @wbaamaral (GitHub)<br>"
+				+ "<b>Criador Original:</b> Reinhard Pointner (@rednoah)<br>"
 				+ "<i>Nosso sincero agradecimento e reconhecimento ao autor original pelo trabalho pioneiro que nos trouxe até aqui.</i><br><br>"
 				+ "<b>Ambiente de Execução:</b> Java %s (%s)<br>"
-				+ "<b>Licença:</b> GNU Affero GPL v3 (Software Livre)"
+				+ "<b>Licença:</b> GNU Affero GPL v3 (Software Livre)<br>"
+				+ "<b>Repositório:</b> https://github.com/wbaamaral/open-filebot"
 				+ "</html>",
 				getApplicationVersion(),
 				System.getProperty("java.version"),
