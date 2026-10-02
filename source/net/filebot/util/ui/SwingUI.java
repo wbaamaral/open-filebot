@@ -59,6 +59,86 @@ import net.filebot.Settings;
 
 public final class SwingUI {
 
+	public static void initTheme() {
+		String theme = getThemePreference();
+		applyTheme(theme);
+	}
+
+	public static String getThemePreference() {
+		String prop = System.getProperty("net.filebot.theme");
+		if (prop != null && !prop.isEmpty()) {
+			return prop.trim().toLowerCase();
+		}
+		return Settings.forPackage(SwingUI.class).entry("ui.theme").defaultValue("system").getValue();
+	}
+
+	public static void setThemePreference(String theme) {
+		Settings.forPackage(SwingUI.class).entry("ui.theme").setValue(theme);
+		applyTheme(theme);
+		try {
+			com.formdev.flatlaf.FlatLaf.updateUI();
+		} catch (Throwable ignored) {}
+	}
+
+	public static void applyTheme(String theme) {
+		try {
+			if ("dark".equalsIgnoreCase(theme)) {
+				com.formdev.flatlaf.FlatDarkLaf.setup();
+			} else if ("light".equalsIgnoreCase(theme)) {
+				com.formdev.flatlaf.FlatLightLaf.setup();
+			} else if ("nimbus".equalsIgnoreCase(theme)) {
+				setNimbusLookAndFeel();
+			} else {
+				// system / auto-detect
+				if (isSystemInDarkMode()) {
+					com.formdev.flatlaf.FlatDarkLaf.setup();
+				} else {
+					com.formdev.flatlaf.FlatLightLaf.setup();
+				}
+			}
+		} catch (Throwable e) {
+			debug.log(Level.WARNING, "Failed to apply FlatLaf theme: " + theme, e);
+			setNimbusLookAndFeel();
+		}
+	}
+
+	public static boolean isDarkTheme() {
+		Color bg = UIManager.getColor("Panel.background");
+		if (bg != null) {
+			double luminance = 0.299 * bg.getRed() + 0.587 * bg.getGreen() + 0.114 * bg.getBlue();
+			return luminance < 128;
+		}
+		return false;
+	}
+
+	public static boolean isSystemInDarkMode() {
+		if (com.sun.jna.Platform.isLinux()) {
+			try {
+				Process p = new ProcessBuilder("gsettings", "get", "org.gnome.desktop.interface", "color-scheme").start();
+				try (java.util.Scanner s = new java.util.Scanner(p.getInputStream())) {
+					if (s.hasNextLine()) {
+						String val = s.nextLine().toLowerCase();
+						if (val.contains("dark")) return true;
+						if (val.contains("light") || val.contains("default")) return false;
+					}
+				}
+			} catch (Throwable ignored) {}
+
+			try {
+				Process p = new ProcessBuilder("dbus-send", "--print-reply=literal", "--dest=org.freedesktop.portal.Desktop",
+					"/org/freedesktop/portal/desktop", "org.freedesktop.portal.Settings.Read",
+					"string:org.freedesktop.appearance", "string:color-scheme").start();
+				try (java.util.Scanner s = new java.util.Scanner(p.getInputStream())) {
+					if (s.hasNextLine()) {
+						String val = s.nextLine().trim();
+						if (val.contains("uint32 1")) return true;
+					}
+				}
+			} catch (Throwable ignored) {}
+		}
+		return false;
+	}
+
 	public static void setNimbusLookAndFeel() {
 		try {
 			UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");

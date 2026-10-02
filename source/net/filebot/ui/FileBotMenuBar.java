@@ -3,15 +3,53 @@ package net.filebot.ui;
 import static net.filebot.Settings.*;
 import static net.filebot.util.ui.SwingUI.*;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
+import javax.swing.JRadioButtonMenuItem;
 
 import net.filebot.ResourceManager;
+import net.filebot.util.ui.SwingUI;
 
 public class FileBotMenuBar {
 
-	public static JMenuBar createHelp() {
+	public static JMenuBar createMenuBar() {
+		JMenu themeMenu = new JMenu("Aparência");
+		ButtonGroup themeGroup = new ButtonGroup();
+
+		JRadioButtonMenuItem systemItem = new JRadioButtonMenuItem("Automático (Sistema)");
+		JRadioButtonMenuItem darkItem = new JRadioButtonMenuItem("Tema Escuro (Dark)");
+		JRadioButtonMenuItem lightItem = new JRadioButtonMenuItem("Tema Claro (Light)");
+		JRadioButtonMenuItem nimbusItem = new JRadioButtonMenuItem("Tema Legado (Nimbus)");
+
+		themeGroup.add(systemItem);
+		themeGroup.add(darkItem);
+		themeGroup.add(lightItem);
+		themeGroup.add(nimbusItem);
+
+		String current = SwingUI.getThemePreference();
+		if ("dark".equalsIgnoreCase(current)) {
+			darkItem.setSelected(true);
+		} else if ("light".equalsIgnoreCase(current)) {
+			lightItem.setSelected(true);
+		} else if ("nimbus".equalsIgnoreCase(current)) {
+			nimbusItem.setSelected(true);
+		} else {
+			systemItem.setSelected(true);
+		}
+
+		systemItem.addActionListener(evt -> SwingUI.setThemePreference("system"));
+		darkItem.addActionListener(evt -> SwingUI.setThemePreference("dark"));
+		lightItem.addActionListener(evt -> SwingUI.setThemePreference("light"));
+		nimbusItem.addActionListener(evt -> SwingUI.setThemePreference("nimbus"));
+
+		themeMenu.add(systemItem);
+		themeMenu.add(darkItem);
+		themeMenu.add(lightItem);
+		themeMenu.addSeparator();
+		themeMenu.add(nimbusItem);
+
 		JMenu help = new JMenu("Ajuda");
 
 		help.add(newAction("Sobre o FileBot", ResourceManager.getIcon("window.icon.small"), evt -> {
@@ -47,8 +85,13 @@ public class FileBotMenuBar {
 		}));
 
 		JMenuBar menuBar = new JMenuBar();
+		menuBar.add(themeMenu);
 		menuBar.add(help);
 		return menuBar;
+	}
+
+	public static JMenuBar createHelp() {
+		return createMenuBar();
 	}
 
 }

@@ -58,9 +58,15 @@ public class HeaderPanel extends JComponent {
 	protected void paintComponent(Graphics g) {
 		Graphics2D g2d = (Graphics2D) g;
 
-		LinearGradientPaint paint = new LinearGradientPaint(0, 0, getWidth(), 0, gradientFractions, gradientColors);
+		if (net.filebot.util.ui.SwingUI.isDarkTheme()) {
+			Color[] darkColors = { new Color(0x282828), new Color(0x323232), new Color(0x262626) };
+			titleLabel.setForeground(new Color(0xEEEEEE));
+			g2d.setPaint(new LinearGradientPaint(0, 0, getWidth(), 0, gradientFractions, darkColors));
+		} else {
+			titleLabel.setForeground(new Color(0x101010));
+			g2d.setPaint(new LinearGradientPaint(0, 0, getWidth(), 0, gradientFractions, gradientColors));
+		}
 
-		g2d.setPaint(paint);
 		g2d.fill(getBounds());
 	}
 

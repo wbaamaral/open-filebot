@@ -168,12 +168,8 @@ public class Main {
 	}
 
 	private static void startUserInterface(ArgumentBean args) {
-		// use native LaF an all platforms (use platform-independent laf for standalone jar deployment)
-		if (isPortableApp()) {
-			setNimbusLookAndFeel();
-		} else {
-			setSystemLookAndFeel();
-		}
+		// initialize modern FlatLaf theme (Dark / Light / System auto-detect)
+		initTheme();
 
 		// start multi panel or single panel frame
 		PanelBuilder[] panels = args.getPanelBuilders();
@@ -200,17 +196,13 @@ public class Main {
 		// configure main window
 		if (isMacApp()) {
 			// Mac specific configuration
-			MacAppUtilities.initializeApplication(FileBotMenuBar.createHelp(), files -> SwingEventBus.getInstance().post(new FileTransferable(files)));
-		} else if (isUbuntuApp()) {
-			// Ubuntu/Debian specific configuration
-			frame.setIconImages(ResourceManager.getApplicationIconImages());
-		} else if (isWindowsApp()) {
-			// Windows specific configuration
-			WinAppUtilities.initializeApplication();
-			frame.setIconImages(ResourceManager.getApplicationIconImages());
+			MacAppUtilities.initializeApplication(FileBotMenuBar.createMenuBar(), files -> SwingEventBus.getInstance().post(new FileTransferable(files)));
 		} else {
-			// generic Linux/FreeBSD/Solaris configuration
+			frame.setJMenuBar(FileBotMenuBar.createMenuBar());
 			frame.setIconImages(ResourceManager.getApplicationIconImages());
+			if (isWindowsApp()) {
+				WinAppUtilities.initializeApplication();
+			}
 		}
 
 		// start application

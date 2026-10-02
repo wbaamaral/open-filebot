@@ -200,6 +200,9 @@
 				<include name="com/googlecode/lanterna/**" />
 				<include name="**/*.properties" />
 			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/flatlaf.jar">
+				<include name="com/formdev/flatlaf/**" />
+			</zipfileset>
 
 			<!-- include IO libraries -->
 			<zipfileset src="${dir.dist}/lib/xz.jar">
@@ -784,6 +787,7 @@
 				<include name="glazedlists_java16.jar" />
 				<include name="rsyntaxtextarea.jar" />
 				<include name="lanterna.jar" />
+				<include name="flatlaf.jar" />
 				<include name="xz.jar" />
 				<include name="sevenzipjbinding.jar" />
 				<include name="commons-io.jar" />
