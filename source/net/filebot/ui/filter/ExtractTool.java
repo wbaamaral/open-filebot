@@ -56,8 +56,6 @@ class ExtractTool extends Tool<TableModel> {
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 		table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
-		table.setBackground(Color.white);
-		table.setGridColor(new Color(0xEEEEEE));
 		table.setRowHeight(25);
 
 		JScrollPane tableScrollPane = new JScrollPane(table);
@@ -216,6 +214,9 @@ class ExtractTool extends Tool<TableModel> {
 						final List<FileInfo> outputMapping = new ArrayList<FileInfo>();
 						for (FileInfo it : archive.listFiles()) {
 							File outputPath = outputMapper.getOutputFile(it.toFile());
+							if (outputPath == null) {
+								continue; // ignore illegal archive entry paths
+							}
 							outputMapping.add(new SimpleFileInfo(outputPath.getPath(), it.getLength()));
 						}
 

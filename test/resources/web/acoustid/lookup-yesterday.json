@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "results": [
+    {
+      "id": "e4f53f4d-0828-d3b4-a0e8-d86b1a0e5c0c",
+      "score": 0.92,
+      "recordings": [
+        {
+          "id": "b2e4f53f-4d08-28d3-4b4a-0e8d86b1a0e5",
+          "title": "Yesterday",
+          "artists": [
+            { "id": "c3f53f4d-0828-4d3b-8a0e-8d86b1a0e5c0", "name": "The Beatles" }
+          ],
+          "releasegroups": [
+            {
+              "id": "d4f53f4d-0828-4d3b-a0e8-d86b1a0e5c0c",
+              "title": "Help!",
+              "type": "Album"
+            }
+          ],
+          "duration": 165
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+# Open FileBot icon set
+#
+# name			resource name used by ResourceManager.getIcon(name)
+# tabler		Tabler Icons outline icon name (https://tabler.io/icons)
+# role			color token role: glyph accent success warning danger info muted
+#			or tile:<panel> for colored sidebar tiles (white glyph on panel color)
+# size			icon size in px (FileBot.icon.small = 16, medium = 24, large = 48)
+#
+# Brand logos (search.*), flags and the application icon are not part of this set.
+#
+# name	tabler	role	size
+
+# actions
+action.auto	wand	accent	16
+action.clear	refresh	glyph	16
+action.down	arrow-down	glyph	16
+action.up	arrow-up	glyph	16
+action.export	file-export	glyph	16
+action.extension.override	file-pencil	glyph	16
+action.extension.preserve	file-check	glyph	16
+action.fetch	cloud-download	accent	16
+action.find	binoculars	glyph	16
+action.format	cursor-text	glyph	16
+action.load	folder-open	glyph	16
+action.match	arrows-horizontal	success	24
+action.match.small	arrows-horizontal	success	16
+action.match.strict	arrows-horizontal	info	24
+action.menu	menu-2	glyph	16
+action.preferences	adjustments-horizontal	glyph	16
+action.properties	list-details	glyph	16
+action.rename	arrow-right	accent	24
+action.report	history	glyph	16
+action.revert	arrow-back-up	glyph	16
+action.save	device-floppy	glyph	16
+action.script	script	glyph	16
+action.search	search	glyph	16
+action.settings	settings	glyph	16
+action.user	user	glyph	16
+action.variables	variable	glyph	16
+
+# rename actions (32 px in menus, 16 px in lists)
+action.move	file-arrow-right	glyph	32
+action.copy	copy	glyph	32
+action.keeplink	link-plus	glyph	32
+action.symlink	file-symlink	glyph	32
+action.hardlink	link	glyph	32
+action.clone	copy-plus	glyph	32
+action.duplicate	copy-check	glyph	32
+action.test	flask	glyph	32
+rename.action.move	file-arrow-right	glyph	16
+rename.action.copy	copy	glyph	16
+rename.action.keeplink	link-plus	glyph	16
+rename.action.symlink	file-symlink	glyph	16
+rename.action.hardlink	link	glyph	16
+rename.action.clone	copy-plus	glyph	16
+rename.action.duplicate	copy-check	glyph	16
+rename.action.test	flask	glyph	16
+
+# buttons
+button.repeat	repeat	glyph	16
+button.repeat.selected	repeat	accent	16
+bullet.green	circle-dot	success	16
+
+# data sources
+database.ok	database	success	16
+database.go	database-share	accent	16
+database.error	database-x	danger	16
+
+# dialogs
+dialog.cancel	x	danger	16
+dialog.continue	arrow-right	success	16
+dialog.continue.invalid	alert-octagon	danger	16
+dialog.switch	switch-horizontal	glyph	16
+edit.clear	eraser	glyph	16
+
+# files and folders
+file.generic	file	glyph	24
+file.lock	lock	warning	32
+file.subtitle	file-text	glyph	24
+file.video	movie	glyph	24
+folder.locked	lock	warning	64
+folder.open	folder-open	glyph	64
+tree.closed	folder	glyph	24
+tree.open	folder-open	glyph	24
+tree.collapse	square-minus	glyph	16
+tree.expand	square-plus	glyph	16
+
+# messages
+message.info	info-circle	info	32
+message.warning	alert-triangle	warning	32
+message.error	circle-x	danger	32
+
+# archives
+package.extract	package-export	glyph	16
+package.fetch	package-import	glyph	16
+
+# scripts
+script.add	file-plus	glyph	16
+script.go	player-play	success	16
+script.cancel	player-stop	danger	16
+
+# generic search sources (brand logos are kept as PNG)
+search.exif	photo	glyph	16
+search.generic	file-search	glyph	16
+search.xattr	tags	glyph	16
+
+# status
+status.ok	circle-check	success	16
+status.info	info-circle	info	16
+status.warning	alert-triangle	warning	16
+status.error	circle-x	danger	16
+status.unknown	help-circle	muted	16
+status.link.ok	link	success	16
+status.link.broken	unlink	danger	16
+
+# subtitles
+subtitle.exact.download	circle-arrow-down	success	30
+subtitle.exact.upload	circle-arrow-up	accent	30
+
+# background workers
+worker.pending	hourglass-empty	muted	16
+worker.started	hourglass-high	accent	16
+
+# sidebar panels
+panel.rename	pencil	tile:rename	48
+panel.episodelist	device-tv	tile:episodes	48
+panel.subtitle	badge-cc	tile:subtitles	48
+panel.sfv	shield-check	tile:sfv	48
+panel.analyze	filter	tile:filter	48
+panel.list	list-numbers	tile:list	48

@@ -1,5 +1,11 @@
 # Catálogo de Features das Versões Recentes do FileBot (Para Implementação Futura)
 
+> **Nota de estado (2026-10-03):** este arquivo permanece como catálogo de
+> requisitos. A situação real de cada item e o plano incremental de execução
+> estão em
+> [`docs/plan/auditoria-roadmap-modernizacao.md`](plan/auditoria-roadmap-modernizacao.md).
+> Alguns itens abaixo já foram implementados total ou parcialmente.
+
 Este documento registra detalhadamente todas as funcionalidades, melhorias arquiteturais, atualizações de APIs e novos recursos introduzidos nas versões recentes do FileBot (linhas 4.8.5, 4.9.x e 5.x) que foram lançadas sob modelo comercial/pago após o fechamento do repositório original.
 
 Este inventário serve como especificação e guia de implementação para as próximas iterações desta versão open-source.

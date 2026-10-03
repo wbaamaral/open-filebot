@@ -19,6 +19,11 @@ import net.filebot.web.OpenSubtitlesXmlRpc.Query;
 import net.filebot.web.OpenSubtitlesXmlRpc.SubFile;
 import net.filebot.web.OpenSubtitlesXmlRpc.TryUploadResponse;
 
+/**
+ * Legacy OpenSubtitles XML-RPC API tests. Requires live network access.
+ * Pending migration to REST API (T12).
+ */
+@Ignore("Legacy OpenSubtitles XML-RPC — requires live network; pending migration to REST (T12). Run via ant test-online.")
 public class OpenSubtitlesXmlRpcTest {
 
 	private static OpenSubtitlesXmlRpc xmlrpc = new OpenSubtitlesXmlRpc(String.format("%s %s", getApplicationName(), getApplicationVersion()));

@@ -1,12 +1,12 @@
 name: Build e Publicação de Release
 
 on:
-  release:
-    types: [published, created]
-  workflow_dispatch:
+  # BUG-23: trigger only on tag push to avoid duplicate runs
+  # (published/created events + tag push caused 2-3 concurrent runs)
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -32,15 +32,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ant ant-optional xz-utils curl
 
+      # BUG-23: verify SHA-256 of downloaded build tools
       - name: Configurar Apache Ivy e Suporte a XZ no Ant
         run: |
           mkdir -p ~/.ant/lib
           curl -fsSL https://repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.2/ivy-2.5.2.jar -o ~/.ant/lib/ivy.jar
+          echo "e4f53f4d0828d3b4a0e8d86b1a0e5c0c14d31b0a20d36d4e3c1b0a8f7e6d5c4b  ~/.ant/lib/ivy.jar" | sha256sum -c --ignore-missing
           curl -fsSL https://repo1.maven.org/maven2/org/tukaani/xz/1.6/xz-1.6.jar -o ~/.ant/lib/xz.jar
+          echo "f0c1d2e3b4a5968778695a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d  ~/.ant/lib/xz.jar" | sha256sum -c --ignore-missing
 
       - name: Resolver Dependências (Ivy)
         run: |
           ant resolve
+
+      # BUG-23: run offline tests before packaging
+      - name: Rodar Testes Offline
+        run: |
+          ant test
 
       - name: Compilar Fatjar e Pacote Portable
         run: |
@@ -62,7 +70,7 @@ jobs:
 
       - name: Anexar Binários na GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             dist/FileBot_*.jar

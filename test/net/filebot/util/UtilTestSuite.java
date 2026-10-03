@@ -4,8 +4,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import net.filebot.util.ui.TokensTest;
+
 @RunWith(Suite.class)
-@SuiteClasses({ FileUtilitiesTest.class, ByteBufferOutputStreamTest.class, PreferencesMapTest.class, PreferencesListTest.class, TreeIteratorTest.class, FilterIteratorTest.class, StringUtilitiesTest.class })
+@SuiteClasses({ TokensTest.class, FileUtilitiesTest.class, ByteBufferOutputStreamTest.class, PreferencesMapTest.class, PreferencesListTest.class, TreeIteratorTest.class, FilterIteratorTest.class, StringUtilitiesTest.class })
 public class UtilTestSuite {
 
 }

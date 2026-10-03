@@ -39,6 +39,7 @@ import java.util.logging.Level;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import net.filebot.History.HistoryFormatException;
 import net.filebot.HistorySpooler;
 import net.filebot.Language;
 import net.filebot.RenameAction;
@@ -83,6 +84,14 @@ import net.filebot.web.SubtitleProvider;
 import net.filebot.web.VideoHashSubtitleService;
 
 public class CmdlineOperations implements CmdlineInterface {
+
+	/** Release/airdate timestamps extracted during renameAll (destination file → millis). */
+	private final Map<File, Long> dateMap = new LinkedHashMap<File, Long>();
+
+	/** @return release/airdate timestamps from the last renameAll call */
+	public Map<File, Long> getDateMap() {
+		return dateMap;
+	}
 
 	@Override
 	public List<File> rename(Collection<File> files, RenameAction action, ConflictAction conflict, File output, ExpressionFileFormat format, Datasource db, String query, SortOrder order, ExpressionFilter filter, Locale locale, boolean strict, ExecCommand exec) throws Exception {
@@ -578,6 +587,7 @@ public class CmdlineOperations implements CmdlineInterface {
 
 		// rename files
 		Map<File, File> renameLog = new LinkedHashMap<File, File>();
+		dateMap.clear();
 
 		try {
 			for (Entry<File, File> it : renameMap.entrySet()) {
@@ -589,6 +599,19 @@ public class CmdlineOperations implements CmdlineInterface {
 					if (!destination.isAbsolute()) {
 						// same folder, different name
 						destination = resolve(source, destination);
+					}
+
+					// extract release/airdate for --apply date (FIX-15)
+					if (matches != null) {
+						for (Match<File, ?> match : matches) {
+							if (source.equals(match.getValue()) && match.getCandidate() != null) {
+								Long ts = extractTimestamp(match.getCandidate());
+								if (ts != null) {
+									dateMap.put(destination, ts);
+								}
+								break;
+							}
+						}
 					}
 
 					if (!destination.equals(source) && destination.exists()) {
@@ -657,6 +680,22 @@ public class CmdlineOperations implements CmdlineInterface {
 		return new ArrayList<File>(renameLog.values());
 	}
 
+	/**
+	 * Extract release/airdate timestamp from a matched metadata object (FIX-15).
+	 * @return timestamp in milliseconds, or {@code null} if unknown
+	 */
+	private static Long extractTimestamp(Object info) {
+		if (info instanceof net.filebot.web.Episode) {
+			net.filebot.web.SimpleDate airdate = ((net.filebot.web.Episode) info).getAirdate();
+			return airdate != null ? airdate.getTimeStamp() : null;
+		}
+		if (info instanceof net.filebot.web.Movie) {
+			int year = ((net.filebot.web.Movie) info).getYear();
+			return year > 0 ? new net.filebot.web.SimpleDate(year, 1, 1).getTimeStamp() : null;
+		}
+		return null;
+	}
+
 	protected void writeHistory(RenameAction action, Map<File, File> log, List<Match<File, ?>> matches) {
 		// write rename history
 		if (action.canRevert()) {
@@ -680,7 +719,18 @@ public class CmdlineOperations implements CmdlineInterface {
 		File parent = file.getParentFile();
 		String name = getName(file);
 		String ext = getExtension(file);
-		return IntStream.range(1, 100).mapToObj(i -> new File(parent, name + '.' + i + '.' + ext)).filter(f -> !f.exists()).findFirst().get();
+
+		// BUG-21: extension may be null (folders, extensionless files) — avoid "Name.1.null"
+		String suffix = (ext != null && !ext.isEmpty()) ? "." + ext : "";
+
+		// remove fixed 99 limit; fail with a clear error if no slot is found
+		for (int i = 1; i <= 10000; i++) {
+			File candidate = new File(parent, name + '.' + i + suffix);
+			if (!candidate.exists()) {
+				return candidate;
+			}
+		}
+		throw new CmdlineException(String.format("No available indexed name for [%s] after 10000 attempts", file));
 	}
 
 	@Override
@@ -1099,7 +1149,12 @@ public class CmdlineOperations implements CmdlineInterface {
 		}
 
 		Set<File> whitelist = new HashSet<File>(files);
-		Map<File, File> history = HistorySpooler.getInstance().getCompleteHistory().getRenameMap();
+		Map<File, File> history;
+		try {
+			history = HistorySpooler.getInstance().getCompleteHistory().getRenameMap();
+		} catch (HistoryFormatException e) {
+			throw new CmdlineException("Unable to read rename history: " + e.getMessage(), e);
+		}
 
 		return history.entrySet().stream().filter(it -> {
 			File original = it.getKey();
@@ -1142,6 +1197,9 @@ public class CmdlineOperations implements CmdlineInterface {
 				List<FileInfo> outputMapping = new ArrayList<FileInfo>();
 				for (FileInfo it : archive.listFiles()) {
 					File outputPath = outputMapper.getOutputFile(it.toFile());
+					if (outputPath == null) {
+						continue; // ignore illegal archive entry paths
+					}
 					outputMapping.add(new SimpleFileInfo(outputPath.getPath(), it.getLength()));
 				}
 

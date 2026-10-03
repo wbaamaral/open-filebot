@@ -30,7 +30,7 @@ public class ActionPopup extends JPopupMenu {
 
 		actionPanel.setOpaque(false);
 
-		statusLabel.setFont(statusLabel.getFont().deriveFont(10f));
+		Appearance.Typography.BADGE.apply(statusLabel);
 		statusLabel.setForeground(Color.GRAY);
 
 		setLayout(new MigLayout("nogrid, fill, insets 0"));

@@ -1,6 +1,5 @@
 package net.filebot.ui;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.net.URI;
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
 import net.filebot.util.ui.LinkButton;
+import net.filebot.util.ui.Tokens;
 import net.miginfocom.swing.MigLayout;
 
 public class HistoryPanel extends JPanel {
@@ -22,7 +22,7 @@ public class HistoryPanel extends JPanel {
 	public HistoryPanel() {
 		super(new MigLayout("fillx, insets 10 30 10 50, wrap 3"));
 
-		setBackground(Color.WHITE);
+		Tokens.styleClass(this, Tokens.STYLE_LIST_SURFACE);
 		setOpaque(true);
 
 		setupHeader();

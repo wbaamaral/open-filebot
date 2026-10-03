@@ -3,13 +3,20 @@ package net.filebot.ui;
 import static net.filebot.Settings.*;
 import static net.filebot.util.ui.SwingUI.*;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 import net.filebot.ResourceManager;
+import net.filebot.util.ui.Appearance;
+import net.filebot.util.ui.Appearance.Theme;
 import net.filebot.util.ui.SwingUI;
 
 public class FileBotMenuBar {
@@ -17,38 +24,37 @@ public class FileBotMenuBar {
 	public static JMenuBar createMenuBar() {
 		JMenu themeMenu = new JMenu("Aparência");
 		ButtonGroup themeGroup = new ButtonGroup();
+		Map<Theme, JRadioButtonMenuItem> themeItems = new EnumMap<Theme, JRadioButtonMenuItem>(Theme.class);
 
-		JRadioButtonMenuItem systemItem = new JRadioButtonMenuItem("Automático (Sistema)");
-		JRadioButtonMenuItem darkItem = new JRadioButtonMenuItem("Tema Escuro (Dark)");
-		JRadioButtonMenuItem lightItem = new JRadioButtonMenuItem("Tema Claro (Light)");
-		JRadioButtonMenuItem nimbusItem = new JRadioButtonMenuItem("Tema Legado (Nimbus)");
-
-		themeGroup.add(systemItem);
-		themeGroup.add(darkItem);
-		themeGroup.add(lightItem);
-		themeGroup.add(nimbusItem);
-
-		String current = SwingUI.getThemePreference();
-		if ("dark".equalsIgnoreCase(current)) {
-			darkItem.setSelected(true);
-		} else if ("light".equalsIgnoreCase(current)) {
-			lightItem.setSelected(true);
-		} else if ("nimbus".equalsIgnoreCase(current)) {
-			nimbusItem.setSelected(true);
-		} else {
-			systemItem.setSelected(true);
+		for (Theme theme : Theme.values()) {
+			JRadioButtonMenuItem item = new JRadioButtonMenuItem(theme.label);
+			item.setToolTipText(theme.description);
+			item.addActionListener(evt -> SwingUI.setThemePreference(theme.key));
+			themeGroup.add(item);
+			themeItems.put(theme, item);
+			themeMenu.add(item);
 		}
 
-		systemItem.addActionListener(evt -> SwingUI.setThemePreference("system"));
-		darkItem.addActionListener(evt -> SwingUI.setThemePreference("dark"));
-		lightItem.addActionListener(evt -> SwingUI.setThemePreference("light"));
-		nimbusItem.addActionListener(evt -> SwingUI.setThemePreference("nimbus"));
-
-		themeMenu.add(systemItem);
-		themeMenu.add(darkItem);
-		themeMenu.add(lightItem);
 		themeMenu.addSeparator();
-		themeMenu.add(nimbusItem);
+		themeMenu.add(newAction("Configurar aparência…", evt -> AppearanceDialog.showDialog(themeMenu)));
+
+		// theme may also be changed in the appearance dialog
+		themeMenu.addMenuListener(new MenuListener() {
+
+			@Override
+			public void menuSelected(MenuEvent e) {
+				Theme current = Appearance.load().theme;
+				themeItems.forEach((theme, item) -> item.setSelected(theme == current));
+			}
+
+			@Override
+			public void menuDeselected(MenuEvent e) {
+			}
+
+			@Override
+			public void menuCanceled(MenuEvent e) {
+			}
+		});
 
 		JMenu help = new JMenu("Ajuda");
 
@@ -77,9 +83,9 @@ public class FileBotMenuBar {
 
 		help.add(newAction("Atalhos de Teclado", null, evt -> {
 			String shortcuts = "<html><b>Principais Atalhos do FileBot:</b><br><br>"
-				+ "• <b>F5:</b> Executar Renomeação / Ação<br>"
+				+ "• <b>F5:</b> Abrir GroovyPad (console de scripts)<br>"
 				+ "• <b>Delete:</b> Remover arquivos selecionados da lista<br>"
-				+ "• <b>Ctrl + Shift + Delete:</b> Limpar toda a lista<br>"
+				+ "• <b>Ctrl + Shift + Delete:</b> Limpar todo o cache de rede e dados<br>"
 				+ "• <b>F1:</b> Exibir esta tela de Ajuda<br>"
 				+ "</html>";
 			JOptionPane.showMessageDialog(null, shortcuts, "Atalhos do FileBot", JOptionPane.INFORMATION_MESSAGE);

@@ -39,13 +39,28 @@ class MatchAction extends AbstractAction {
 			return;
 		}
 
-		withWaitCursor(evt.getSource(), () -> {
+		// disable while running
+		setEnabled(false);
+
+		Matcher<Object, File> matcher = new Matcher<Object, File>(model.values(), model.candidates(), false, EpisodeMetrics.defaultSequence(true));
+
+		// async: do not block the EDT
+		ProgressMonitor.runTask("Match", "Finding optimal alignment. This may take a while.", (message, progress, cancelled) -> {
+			message.accept(String.format("Checking %d combinations...", matcher.remainingCandidates().size() * matcher.remainingValues().size()));
+			return matcher.match();
+		}, result -> {
+			setEnabled(true);
+
+			if (result.isError()) {
+				Throwable e = result.getError();
+				if (!(e instanceof CancellationException)) {
+					log.log(Level.WARNING, e.getMessage(), e);
+				}
+				return;
+			}
+
 			try {
-				Matcher<Object, File> matcher = new Matcher<Object, File>(model.values(), model.candidates(), false, EpisodeMetrics.defaultSequence(true));
-				List<Match<Object, File>> matches = ProgressMonitor.runTask("Match", "Finding optimal alignment. This may take a while.", (message, progress, cancelled) -> {
-					message.accept(String.format("Checking %d combinations...", matcher.remainingCandidates().size() * matcher.remainingValues().size()));
-					return matcher.match();
-				}).get();
+				List<Match<Object, File>> matches = result.getValue();
 
 				// put new data into model
 				model.clear();
@@ -53,8 +68,6 @@ class MatchAction extends AbstractAction {
 
 				// insert objects that could not be matched at the end of the model
 				model.addAll(matcher.remainingValues(), matcher.remainingCandidates());
-			} catch (CancellationException e) {
-				debug.finest(e::toString);
 			} catch (Throwable e) {
 				log.log(Level.WARNING, e.getMessage(), e);
 			}

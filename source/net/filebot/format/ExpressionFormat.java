@@ -2,7 +2,6 @@ package net.filebot.format;
 
 import static net.filebot.util.ExceptionUtilities.*;
 
-import java.security.AccessController;
 import java.text.FieldPosition;
 import java.text.Format;
 import java.text.ParsePosition;
@@ -23,12 +22,15 @@ import javax.script.SimpleScriptContext;
 
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.MultipleCompilationErrorsException;
+import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
+import org.kohsuke.groovy.sandbox.SandboxTransformer;
 
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.GroovyRuntimeException;
 import groovy.lang.MissingPropertyException;
+import groovy.transform.TimedInterrupt;
 
 public class ExpressionFormat extends Format {
 
@@ -130,12 +132,9 @@ public class ExpressionFormat extends Format {
 	}
 
 	public String format(Bindings bindings) {
-		// use privileged bindings so we are not restricted by the script sandbox
-		Bindings priviledgedBindings = PrivilegedInvocation.newProxy(Bindings.class, bindings, AccessController.getContext());
-
-		// initialize script context with the privileged bindings
+		// initialize script context with the bindings
 		ScriptContext context = new SimpleScriptContext();
-		context.setBindings(priviledgedBindings, ScriptContext.GLOBAL_SCOPE);
+		context.setBindings(bindings, ScriptContext.GLOBAL_SCOPE);
 
 		// reset exception state
 		List<Throwable> suppressed = new ArrayList<Throwable>();
@@ -217,7 +216,7 @@ public class ExpressionFormat extends Format {
 			}
 
 			if (snippet instanceof CompiledScript) {
-				compilation[i] = new SecureCompiledScript((CompiledScript) snippet);
+				compilation[i] = new SandboxedCompiledScript((CompiledScript) snippet);
 			}
 		}
 
@@ -234,6 +233,14 @@ public class ExpressionFormat extends Format {
 		ImportCustomizer imports = new ImportCustomizer();
 		imports.addStaticStars(ExpressionFormatFunctions.class.getName());
 		config.addCompilationCustomizers(imports);
+
+		// sandbox: rewrite calls/constructors/attributes through ExpressionSandbox at runtime
+		config.addCompilationCustomizers(new SandboxTransformer());
+
+		// time limit per expression (guards against while(true))
+		ASTTransformationCustomizer timedInterrupt = new ASTTransformationCustomizer(TimedInterrupt.class);
+		timedInterrupt.setAnnotationParameters(Map.of("value", SandboxedCompiledScript.DEFAULT_TIMEOUT_MS));
+		config.addCompilationCustomizers(timedInterrupt);
 
 		GroovyClassLoader classLoader = new GroovyClassLoader(Thread.currentThread().getContextClassLoader(), config);
 		return new GroovyScriptEngineImpl(classLoader);

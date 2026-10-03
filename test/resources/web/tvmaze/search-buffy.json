@@ -1,0 +1,37 @@
+[
+  {
+    "score": 0.95,
+    "show": {
+      "id": 427,
+      "name": "Buffy the Vampire Slayer",
+      "type": "Scripted",
+      "language": "English",
+      "genres": ["Drama", "Fantasy", "Horror"],
+      "status": "Ended",
+      "runtime": 60,
+      "premiered": "1997-03-10",
+      "network": {
+        "id": 81,
+        "name": "UPN",
+        "country": {
+          "code": "US",
+          "name": "United States",
+          "timezone": "America/New_York"
+        }
+      },
+      "summary": "A young woman, chosen one, battles vampires and other supernatural forces."
+    }
+  },
+  {
+    "score": 0.82,
+    "show": {
+      "id": 670,
+      "name": "Buffy the Vampire Slayer: Legacy",
+      "type": "Scripted",
+      "language": "English",
+      "genres": ["Drama"],
+      "status": "Planned",
+      "premiered": "2025-01-01"
+    }
+  }
+]

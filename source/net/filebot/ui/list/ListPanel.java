@@ -1,13 +1,10 @@
 package net.filebot.ui.list;
 
-import static java.awt.Font.*;
 import static java.util.stream.Collectors.*;
 import static javax.swing.BorderFactory.*;
 import static net.filebot.util.ui.SwingUI.*;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -29,15 +26,13 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.TransferHandler;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import com.google.common.eventbus.Subscribe;
 
 import net.filebot.ResourceManager;
 import net.filebot.format.ExpressionFormat;
+import net.filebot.ui.CodeEditor;
 import net.filebot.ui.FileBotList;
 import net.filebot.ui.FileBotListExportHandler;
 import net.filebot.ui.PanelBuilder;
@@ -57,7 +52,7 @@ public class ListPanel extends JComponent {
 	public static final String DEFAULT_FILE_FORMAT = "{fn}";
 	public static final String DEFAULT_EPISODE_FORMAT = "{n} - {s00e00} - [{absolute}] - [{airdate}] - {t}";
 
-	private RSyntaxTextArea editor = createEditor();
+	private CodeEditor editor = createEditor();
 	private SpinnerNumberModel fromSpinnerModel = new SpinnerNumberModel(1, 0, Integer.MAX_VALUE, 1);
 	private SpinnerNumberModel toSpinnerModel = new SpinnerNumberModel(20, 0, Integer.MAX_VALUE, 1);
 
@@ -158,35 +153,17 @@ public class ListPanel extends JComponent {
 		createItemSequence();
 	}
 
-	private RSyntaxTextArea createEditor() {
-		RSyntaxTextArea editor = new RSyntaxTextArea(new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_GROOVY), "", 1, 80);
-
-		editor.setAntiAliasingEnabled(true);
-		editor.setAnimateBracketMatching(false);
-		editor.setAutoIndentEnabled(false);
-		editor.setClearWhitespaceLinesEnabled(false);
-		editor.setBracketMatchingEnabled(true);
-		editor.setCloseCurlyBraces(false);
-		editor.setCodeFoldingEnabled(false);
-		editor.setHyperlinksEnabled(false);
-		editor.setUseFocusableTips(false);
-		editor.setHighlightCurrentLine(false);
-		editor.setLineWrap(false);
-		editor.setPaintMarkOccurrencesBorder(false);
-		editor.setPaintTabLines(false);
-		editor.setMarkOccurrences(false);
-		editor.setFont(new Font(MONOSPACED, PLAIN, 14));
-
-		Color defaultForeground = editor.getForeground();
+	private CodeEditor createEditor() {
+		CodeEditor editor = new CodeEditor();
 
 		// update format on change
 		editor.getDocument().addDocumentListener(new LazyDocumentListener(20, evt -> {
 			try {
 				String expression = editor.getText().trim();
 				setFormat(expression.isEmpty() ? null : new ExpressionFormat(expression));
-				editor.setForeground(defaultForeground);
+				editor.setInvalid(false);
 			} catch (ScriptException e) {
-				editor.setForeground(Color.RED);
+				editor.setInvalid(true);
 			}
 		}));
 

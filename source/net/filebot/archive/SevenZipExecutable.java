@@ -2,6 +2,7 @@ package net.filebot.archive;
 
 import static java.nio.charset.StandardCharsets.*;
 import static java.util.Arrays.*;
+import static java.util.stream.Collectors.*;
 import static net.filebot.Logging.*;
 import static net.filebot.util.RegularExpressions.*;
 
@@ -61,7 +62,7 @@ public class SevenZipExecutable implements ArchiveExtractor {
 	@Override
 	public List<FileInfo> listFiles() throws IOException {
 		// e.g. 7z l -y archive.7z
-		CharSequence output = execute(get7zCommand(), "l", "-slt", "-y", archive.getPath());
+		CharSequence output = execute(get7zCommand(), "l", "-slt", "-y", "--", archive.getPath());
 
 		List<FileInfo> paths = new ArrayList<FileInfo>();
 
@@ -103,17 +104,34 @@ public class SevenZipExecutable implements ArchiveExtractor {
 
 	@Override
 	public void extract(File outputDir) throws IOException {
-		// e.g. 7z x -y -aos archive.7z
-		execute(get7zCommand(), "x", "-y", "-aos", archive.getPath(), "-o" + outputDir.getCanonicalPath());
+		// never trust the 7z executable to sanitize archive entry paths (e.g. ../../.bashrc)
+		if (!listFiles().stream().allMatch(f -> FileMapper.isSafeEntryPath(f.getPath()))) {
+			extract(outputDir, f -> true);
+			return;
+		}
+
+		// e.g. 7z x -y -aos -o/path/to/output -- archive.7z
+		execute(get7zCommand(), "x", "-y", "-aos", "-o" + outputDir.getCanonicalPath(), "--", archive.getPath());
 	}
 
 	@Override
 	public void extract(File outputDir, FileFilter filter) throws IOException {
-		// e.g. 7z x -y -aos archive.7z file.txt image.png info.nfo
-		Stream<String> command = Stream.of(get7zCommand(), "x", "-y", "-aos", archive.getPath(), "-o" + outputDir.getCanonicalPath());
-		Stream<String> selection = listFiles().stream().filter(f -> filter.accept(f.toFile())).map(f -> f.getPath());
+		// e.g. 7z x -y -aos -o/path/to/output -- archive.7z file.txt image.png info.nfo
+		Stream<String> command = Stream.of(get7zCommand(), "x", "-y", "-aos", "-o" + outputDir.getCanonicalPath(), "--", archive.getPath());
+		List<String> selection = listFiles().stream().filter(f -> {
+			if (!FileMapper.isSafeEntryPath(f.getPath())) {
+				log.warning(message("Ignore illegal archive entry path", f.getPath()));
+				return false;
+			}
+			return filter.accept(f.toFile());
+		}).map(f -> f.getPath()).collect(toList());
 
-		execute(Stream.concat(command, selection).toArray(String[]::new));
+		// 7z extracts all files if no files are selected
+		if (selection.isEmpty()) {
+			return;
+		}
+
+		execute(Stream.concat(command, selection.stream()).toArray(String[]::new));
 	}
 
 }

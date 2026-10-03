@@ -1,6 +1,5 @@
 package net.filebot.ui.rename;
 
-import static java.awt.Font.*;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import static java.util.regex.Pattern.*;
@@ -14,7 +13,6 @@ import static net.filebot.util.FileUtilities.*;
 import static net.filebot.util.RegularExpressions.*;
 import static net.filebot.util.ui.SwingUI.*;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Window;
@@ -82,10 +80,10 @@ import net.filebot.ui.transfer.LoadAction;
 import net.filebot.ui.transfer.SaveAction;
 import net.filebot.ui.transfer.TransferablePolicy;
 import net.filebot.util.FileUtilities.ExtensionFileFilter;
-import net.filebot.util.ui.GradientStyle;
 import net.filebot.util.ui.LazyDocumentListener;
-import net.filebot.util.ui.notification.SeparatorBorder;
-import net.filebot.util.ui.notification.SeparatorBorder.Position;
+import net.filebot.util.ui.Appearance.Typography;
+import net.filebot.util.ui.ThemeSeparatorBorder;
+import net.filebot.util.ui.Tokens;
 import net.miginfocom.swing.MigLayout;
 
 class HistoryDialog extends JDialog {
@@ -107,12 +105,12 @@ class HistoryDialog extends JDialog {
 
 		// bold title label in header
 		JLabel title = new JLabel(this.getTitle());
-		title.setFont(title.getFont().deriveFont(BOLD));
+		Typography.HEADING.apply(title);
 
 		JPanel header = new JPanel(new MigLayout("insets dialog, nogrid, fillx"));
 
-		header.setBackground(Color.white);
-		header.setBorder(new SeparatorBorder(1, new Color(0xB4B4B4), new Color(0xACACAC), GradientStyle.LEFT_TO_RIGHT, Position.BOTTOM));
+		Tokens.styleClass(header, Tokens.STYLE_HEADER);
+		header.setBorder(new ThemeSeparatorBorder());
 
 		header.add(title, "wrap");
 		header.add(infoLabel, "gap indent*2, wrap");
@@ -234,7 +232,8 @@ class HistoryDialog extends JDialog {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setLocationByPlatform(true);
 		setResizable(true);
-		setSize(580, 640);
+		setMinimumSize(new Dimension(580, 400));
+		setSize(900, 640);
 	}
 
 	public void setModel(History history) {
@@ -288,7 +287,6 @@ class HistoryDialog extends JDialog {
 
 	private JTable createTable(TableModel model) {
 		JTable table = new JTable(model);
-		table.setBackground(Color.white);
 		table.setAutoCreateRowSorter(true);
 		table.setFillsViewportHeight(true);
 
@@ -600,8 +598,8 @@ class HistoryDialog extends JDialog {
 		@Override
 		protected void load(List<File> files, TransferAction action) throws IOException {
 			for (File file : files) {
-				try {
-					HistorySpooler.getInstance().append(History.importHistory(new FileInputStream(file)));
+				try (FileInputStream in = new FileInputStream(file)) {
+					HistorySpooler.getInstance().append(History.importHistory(in));
 				} catch (Exception e) {
 					log.log(Level.SEVERE, "Failed to import history: " + file, e);
 				}
@@ -631,7 +629,9 @@ class HistoryDialog extends JDialog {
 
 		@Override
 		public void export(File file) throws IOException {
-			History.exportHistory(getModel(), new FileOutputStream(file));
+			try (FileOutputStream out = new FileOutputStream(file)) {
+				History.exportHistory(getModel(), out);
+			}
 		}
 
 		@Override

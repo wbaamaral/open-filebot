@@ -107,12 +107,12 @@ public class TVMazeClient extends AbstractEpisodeListProvider {
 	}
 
 	protected URL getResource(String resource) throws Exception {
-		return new URL("http://api.tvmaze.com/" + resource);
+		return new URL("https://api.tvmaze.com/" + resource);
 	}
 
 	@Override
 	public URI getEpisodeListLink(SearchResult searchResult) {
-		return URI.create("http://www.tvmaze.com/shows/" + searchResult.getId());
+		return URI.create("https://www.tvmaze.com/shows/" + searchResult.getId());
 	}
 
 }

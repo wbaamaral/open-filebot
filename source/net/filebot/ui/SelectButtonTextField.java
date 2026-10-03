@@ -2,7 +2,6 @@ package net.filebot.ui;
 
 import static javax.swing.BorderFactory.*;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -15,12 +14,15 @@ import java.util.regex.Pattern;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.ComboBoxEditor;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.KeyStroke;
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
@@ -40,7 +42,26 @@ public class SelectButtonTextField<T> extends JComponent {
 
 	private SelectButton<T> selectButton = new SelectButton<T>();
 
-	private JComboBox<Object> editor = new JComboBox<Object>();
+	private JComboBox<Object> editor = new JComboBox<Object>() {
+
+		@Override
+		public void updateUI() {
+			// the new UI creates a new text editor, so keep the current text
+			Object text = getEditor() != null ? getEditor().getItem() : null;
+
+			// keep the custom combo box UI when the look and feel or theme changes at runtime
+			setUI(new TextFieldComboBoxUI(selectButton));
+
+			if (text != null) {
+				getEditor().setItem(text);
+			}
+
+			ListCellRenderer<?> renderer = getRenderer();
+			if (renderer instanceof Component) {
+				SwingUtilities.updateComponentTreeUI((Component) renderer);
+			}
+		}
+	};
 
 	public SelectButtonTextField() {
 		selectButton.addActionListener(textFieldFocusOnClick);
@@ -53,7 +74,6 @@ public class SelectButtonTextField<T> extends JComponent {
 
 		editor.setPrototypeDisplayValue("X");
 		editor.setRenderer(new CompletionCellRenderer());
-		editor.setUI(new TextFieldComboBoxUI(selectButton));
 		editor.setMaximumRowCount(10);
 
 		SwingUI.installAction(this, KeyStroke.getKeyStroke(KeyEvent.VK_UP, KeyEvent.CTRL_DOWN_MASK), new SpinClientAction(-1));
@@ -61,7 +81,14 @@ public class SelectButtonTextField<T> extends JComponent {
 	}
 
 	public String getText() {
-		return ((TextFieldComboBoxUI) editor.getUI()).getEditor().getText();
+		JTextComponent text = getTextComponent();
+		return text != null ? text.getText() : "";
+	}
+
+	private JTextComponent getTextComponent() {
+		// the editor may not exist yet while a new UI is being installed (e.g. on theme change)
+		ComboBoxEditor e = editor.getEditor();
+		return e != null && e.getEditorComponent() instanceof JTextComponent ? (JTextComponent) e.getEditorComponent() : null;
 	}
 
 	public JComboBox getEditor() {
@@ -103,7 +130,8 @@ public class SelectButtonTextField<T> extends JComponent {
 			super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 			setBorder(new EmptyBorder(1, 4, 1, 4));
 
-			String highlightText = SelectButtonTextField.this.getText().substring(0, ((TextFieldComboBoxUI) editor.getUI()).getEditor().getSelectionStart());
+			JTextComponent text = getTextComponent();
+			String highlightText = text == null ? "" : text.getText().substring(0, Math.min(text.getSelectionStart(), text.getText().length()));
 
 			// highlight the matching sequence
 			Matcher matcher = Pattern.compile(highlightText, Pattern.LITERAL | Pattern.CASE_INSENSITIVE).matcher(value.toString());
@@ -142,8 +170,7 @@ public class SelectButtonTextField<T> extends JComponent {
 		public void configureArrowButton() {
 			super.configureArrowButton();
 
-			arrowButton.setBackground(Color.white);
-			arrowButton.setOpaque(true);
+			arrowButton.setOpaque(false);
 			arrowButton.setBorder(createEmptyBorder());
 			arrowButton.setContentAreaFilled(false);
 			arrowButton.setFocusPainted(false);

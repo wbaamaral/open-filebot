@@ -91,7 +91,7 @@ public class AcoustIDClient implements MusicIdentificationService {
 		return (String) getCache().computeIfAbsent(postParam.toString(), it -> {
 			REQUEST_LIMIT.acquirePermit();
 
-			URL url = new URL("http://api.acoustid.org/v2/lookup?client=" + apikey + "&meta=recordings+releases+releasegroups+tracks+compress");
+			URL url = new URL("https://api.acoustid.org/v2/lookup?client=" + apikey + "&meta=recordings+releases+releasegroups+tracks+compress");
 			Map<String, String> requestParam = new HashMap<String, String>();
 			requestParam.put("Content-Encoding", "gzip");
 			requestParam.put("Accept-Encoding", "gzip");

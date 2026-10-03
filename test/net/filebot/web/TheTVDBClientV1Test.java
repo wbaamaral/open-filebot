@@ -6,10 +6,16 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import net.filebot.web.TheTVDBClientV1.MirrorType;
 
+/**
+ * Legacy TheTVDB v1 XML API tests. Requires live network access.
+ * @see <a href="https://www.themoviedb.org/documentation/api">TheTVDB migration</a>
+ */
+@Ignore("Legacy TheTVDB v1 XML API — requires live network; pending migration to TheTVDB v4 (T11). Run via ant test-online.")
 public class TheTVDBClientV1Test {
 
 	TheTVDBClientV1 db = new TheTVDBClientV1("BA864DEE427E384A");

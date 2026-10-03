@@ -12,6 +12,7 @@ import java.awt.Desktop;
 import java.awt.Dialog;
 import java.awt.FileDialog;
 import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
@@ -25,14 +26,15 @@ import java.util.logging.Level;
 import javax.swing.JFileChooser;
 
 import net.filebot.platform.mac.MacAppUtilities;
+import net.filebot.platform.xdg.XdgTrash;
 import net.filebot.util.FileUtilities;
 import net.filebot.util.FileUtilities.ExtensionFileFilter;
 
 public class UserFiles {
 
 	public static void trash(File file) throws IOException {
-		// use system trash if possible
-		if (Desktop.getDesktop().isSupported(Desktop.Action.MOVE_TO_TRASH)) {
+		// use system trash if possible (never available in headless mode, e.g. on servers)
+		if (!GraphicsEnvironment.isHeadless() && Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.MOVE_TO_TRASH)) {
 			try {
 				if (Desktop.getDesktop().moveToTrash(file)) {
 					return;
@@ -43,8 +45,19 @@ public class UserFiles {
 			}
 		}
 
+		// use freedesktop.org trash on Linux and other Unix systems (Java AWT doesn't support the trash on Linux)
+		if (XdgTrash.isSupported()) {
+			try {
+				XdgTrash.getDefault().moveToTrash(file);
+				return;
+			} catch (Exception e) {
+				log.warning(message("Failed to move file to trash", file, e));
+			}
+		}
+
 		// delete permanently if necessary
 		if (file.exists()) {
+			log.warning(message("Delete permanently", file));
 			FileUtilities.delete(file);
 		}
 	}
@@ -246,19 +259,6 @@ public class UserFiles {
 			public File showSaveDialogSelectFile(boolean folderMode, File defaultFile, String title, ActionEvent evt) {
 				// default to AWT implementation
 				return AWT.showSaveDialogSelectFile(folderMode, defaultFile, title, evt);
-			}
-		},
-
-		JavaFX {
-
-			@Override
-			public List<File> showLoadDialogSelectFiles(boolean folderMode, boolean multiSelection, File defaultFile, ExtensionFileFilter filter, String title, ActionEvent evt) {
-				return Swing.showLoadDialogSelectFiles(folderMode, multiSelection, defaultFile, filter, title, evt);
-			}
-
-			@Override
-			public File showSaveDialogSelectFile(boolean folderMode, File defaultFile, String title, ActionEvent evt) {
-				return Swing.showSaveDialogSelectFile(folderMode, defaultFile, title, evt);
 			}
 		};
 

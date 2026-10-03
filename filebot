@@ -1,3 +1,19 @@
 #!/bin/sh
+# Open FileBot launcher — resolves the portable directory dynamically
+# so it keeps working across version bumps (BUG-06).
 PRG_DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$PRG_DIR/dist/FileBot_4.8.0-portable/filebot" "$@"
+
+# prefer stable symlink / copy without version
+if [ -x "$PRG_DIR/dist/portable/filebot" ]; then
+	exec "$PRG_DIR/dist/portable/filebot" "$@"
+fi
+
+# fall back to the most recent FileBot_*-portable directory
+LATEST="$(ls -d "$PRG_DIR"/dist/FileBot_*-portable 2>/dev/null | sort -V | tail -1)"
+if [ -n "$LATEST" ] && [ -x "$LATEST/filebot" ]; then
+	exec "$LATEST/filebot" "$@"
+fi
+
+echo "error: no portable build found under $PRG_DIR/dist/" >&2
+echo "hint: run 'ant portable' first" >&2
+exit 1

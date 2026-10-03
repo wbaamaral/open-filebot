@@ -19,8 +19,9 @@ import javax.swing.JButton;
 
 public class LinkButton extends JButton {
 
-	private Color color = getForeground();
-	private Color rolloverColor = new Color(0x3399FF);
+	// colors of the current theme are used unless colors are set explicitly
+	private Color color = null;
+	private Color rolloverColor = null;
 
 	public LinkButton(String text, String tooltip, Icon icon, URI uri) {
 		this(new OpenUriAction(text, tooltip, icon, uri));
@@ -54,8 +55,17 @@ public class LinkButton extends JButton {
 		}
 	}
 
+	@Override
+	public void updateUI() {
+		super.updateUI();
+		setForeground(getColor());
+	}
+
 	public Color getColor() {
-		return color;
+		if (color != null) {
+			return color;
+		}
+		return Tokens.getColor(Tokens.TEXT_COLOR);
 	}
 
 	public void setColor(Color color) {
@@ -64,7 +74,10 @@ public class LinkButton extends JButton {
 	}
 
 	public Color getRolloverColor() {
-		return rolloverColor;
+		if (rolloverColor != null) {
+			return rolloverColor;
+		}
+		return Tokens.getColor(Tokens.LINK_COLOR);
 	}
 
 	public void setRolloverColor(Color rolloverColor) {
@@ -75,12 +88,12 @@ public class LinkButton extends JButton {
 
 		@Override
 		public void mouseEntered(MouseEvent e) {
-			setForeground(rolloverColor);
+			setForeground(getRolloverColor());
 		}
 
 		@Override
 		public void mouseExited(MouseEvent e) {
-			setForeground(color);
+			setForeground(getColor());
 		}
 	};
 

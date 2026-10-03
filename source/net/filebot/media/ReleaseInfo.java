@@ -489,26 +489,21 @@ public class ReleaseInfo {
 			int slash = prop != null ? prop.lastIndexOf('/') : -1;
 			String fileName = slash >= 0 ? prop.substring(slash + 1) : (prop != null ? prop : name);
 
-			// 1. Try bundled classpath resource (/data/fileName or /fileName)
-			java.io.InputStream resIn = ReleaseInfo.class.getResourceAsStream("/data/" + fileName);
-			if (resIn == null) {
-				resIn = ReleaseInfo.class.getResourceAsStream("/" + fileName);
-			}
-			if (resIn != null) {
-				try (java.io.InputStream in = new XZInputStream(resIn)) {
-					bytes = in.readAllBytes();
-				} catch (Exception ex) {
-					debug.log(Level.FINE, "Failed to read resource data " + fileName, ex);
+			// 1. Custom URL override via system property (e.g. -Durl.thetvdb-index=...)
+			if (bytes == null && prop != null && (prop.startsWith("http://") || prop.startsWith("https://")) && !prop.contains("app.filebot.net")) {
+				try {
+					Cache cache = Cache.getCache("data", CacheType.Persistent);
+					bytes = cache.bytes(name, n -> new URL(prop), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+				} catch (Exception e) {
+					debug.log(Level.FINE, "Failed to fetch data from custom URL for " + name, e);
 				}
 			}
 
-			// 2. Try local filesystem data files (offline & fast)
+			// 2. Local filesystem data files (no CWD-relative paths — BUG-12)
 			if (bytes == null || bytes.length == 0) {
 				for (File dir : new File[] {
 					new File(ApplicationFolder.AppData.get(), "data"),
 					new File(System.getProperty("application.dir", "."), "data"),
-					new File("downloads/data"),
-					new File("../downloads/data"),
 					new File("/opt/filebot/data")
 				}) {
 					File localFile = new File(dir, fileName);
@@ -523,20 +518,24 @@ public class ReleaseInfo {
 				}
 			}
 
-			// 3. Fallback to cache/remote only if property is an actual custom URL (ignoring app.filebot.net)
+			// 3. Bundled classpath resource as last fallback
 			if (bytes == null || bytes.length == 0) {
-				try {
-					String urlStr = getProperty(name);
-					if (urlStr != null && (urlStr.startsWith("http://") || urlStr.startsWith("https://")) && !urlStr.contains("app.filebot.net")) {
-						Cache cache = Cache.getCache("data", CacheType.Persistent);
-						bytes = cache.bytes(name, n -> new URL(urlStr), XZInputStream::new).expire(refreshDuration.optional().orElse(expirationTime)).get();
+				java.io.InputStream resIn = ReleaseInfo.class.getResourceAsStream("/data/" + fileName);
+				if (resIn == null) {
+					resIn = ReleaseInfo.class.getResourceAsStream("/" + fileName);
+				}
+				if (resIn != null) {
+					try (java.io.InputStream in = new XZInputStream(resIn)) {
+						bytes = in.readAllBytes();
+					} catch (Exception ex) {
+						debug.log(Level.FINE, "Failed to read bundled resource data " + fileName, ex);
 					}
-				} catch (Exception e) {
-					debug.log(Level.FINE, "Failed to fetch data for " + name, e);
 				}
 			}
 
 			if (bytes == null || bytes.length == 0) {
+				// BUG-12: log at WARNING when an index is empty, not just FINE
+				debug.warning(String.format("No data available for %s (index is empty)", name));
 				return generator.apply(0);
 			}
 

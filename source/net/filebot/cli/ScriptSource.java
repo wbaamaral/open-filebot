@@ -7,14 +7,17 @@ import static net.filebot.Settings.*;
 import static net.filebot.util.FileUtilities.*;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.tukaani.xz.XZInputStream;
 
 import net.filebot.Cache;
 import net.filebot.CacheType;
-import net.filebot.Resource;
 
 public enum ScriptSource {
 
@@ -27,47 +30,8 @@ public enum ScriptSource {
 
 		@Override
 		public ScriptProvider getScriptProvider(String input) throws Exception {
-			// 1. Try bundled classpath resource (/scripts/m1.jar.xz)
-			byte[] data = null;
-			java.io.InputStream resIn = getClass().getResourceAsStream("/scripts/m1.jar.xz");
-			if (resIn != null) {
-				try (XZInputStream xz = new XZInputStream(resIn)) {
-					data = xz.readAllBytes();
-				} catch (Exception e) {
-					debug.log(java.util.logging.Level.FINE, "Failed to read bundled script package", e);
-				}
-			}
-
-			// 2. Try local filesystem
-			if (data == null) {
-				for (File candidate : new File[] {
-					new File("downloads/scripts/m1.jar.xz"),
-					new File("../downloads/scripts/m1.jar.xz"),
-					new File("/opt/filebot/scripts/m1.jar.xz")
-				}) {
-					if (candidate.exists()) {
-						try (XZInputStream xz = new XZInputStream(new java.io.FileInputStream(candidate))) {
-							data = xz.readAllBytes();
-							break;
-						} catch (Exception e) {
-							debug.log(java.util.logging.Level.FINE, "Failed to read local script package: " + candidate, e);
-						}
-					}
-				}
-			}
-
-			if (data != null) {
-				byte[] finalData = data;
-				Resource<byte[]> bundle = () -> finalData;
-				return new ScriptBundle(bundle, getClass().getResourceAsStream("repository.cer"));
-			}
-
-			URI resource = new URI(getApplicationProperty("github.stable"));
-			Resource<byte[]> bundle = getCache().bytes(resource, URI::toURL, XZInputStream::new).expire(Cache.ONE_WEEK);
-
-			return new ScriptBundle(bundle, getClass().getResourceAsStream("repository.cer"));
+			return new ScriptBundle(getScriptBundleSources(getCache()), getApplicationProperty("script.bundle.sha256"));
 		}
-
 
 	},
 
@@ -94,9 +58,6 @@ public enum ScriptSource {
 		public String accept(String input) {
 			if (input.startsWith("g:")) {
 				return input.substring(2);
-			}
-			if ((input.contains(" ") || input.contains("\n") || input.contains(";")) && !new File(input).exists()) {
-				return input;
 			}
 			return null;
 		}
@@ -160,6 +121,37 @@ public enum ScriptSource {
 		}
 
 	};
+
+	/**
+	 * Possible locations of the script bundle in order of preference. Every location is verified against the expected checksum. Paths relative to the working directory are never used.
+	 */
+	static List<ScriptBundle.Source> getScriptBundleSources(Cache cache) throws Exception {
+		List<ScriptBundle.Source> sources = new ArrayList<ScriptBundle.Source>();
+
+		// 1. bundled with the application
+		sources.add(new ScriptBundle.Source("classpath:/scripts/m1.jar.xz", () -> {
+			try (InputStream in = ScriptSource.class.getResourceAsStream("/scripts/m1.jar.xz")) {
+				return in == null ? null : new XZInputStream(in).readAllBytes();
+			}
+		}));
+
+		// 2. installed with the system package
+		File system = new File("/opt/filebot/scripts/m1.jar.xz");
+		sources.add(new ScriptBundle.Source(system.getPath(), () -> {
+			if (!system.isFile()) {
+				return null;
+			}
+			try (InputStream in = new XZInputStream(new FileInputStream(system))) {
+				return in.readAllBytes();
+			}
+		}));
+
+		// 3. download
+		URI resource = new URI(getApplicationProperty("github.stable"));
+		sources.add(new ScriptBundle.Source(resource.toString(), cache.bytes(resource, URI::toURL, XZInputStream::new).expire(Cache.ONE_WEEK)));
+
+		return sources;
+	}
 
 	public abstract String accept(String input);
 

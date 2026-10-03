@@ -1,6 +1,7 @@
 package net.filebot.util.prefs;
 
 import static java.nio.charset.StandardCharsets.*;
+import static net.filebot.Logging.*;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -9,13 +10,16 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
@@ -26,6 +30,9 @@ public class PropertyFileBackingStore {
 
 	private Path store;
 	private int modCount = 0;
+
+	/** Tracks whether the last load failed, so flush can avoid overwriting a good backup. */
+	private volatile boolean loadFailed = false;
 
 	private Map<String, Map<String, String>> nodes = new HashMap<String, Map<String, String>>();
 
@@ -117,29 +124,48 @@ public class PropertyFileBackingStore {
 			return;
 		}
 
-		byte[] bytes = Files.readAllBytes(store);
-		StringReader buffer = new StringReader(new String(bytes, UTF_8));
+		try {
+			byte[] bytes = Files.readAllBytes(store);
+			StringReader buffer = new StringReader(new String(bytes, UTF_8));
 
-		Properties props = new Properties();
-		props.load(buffer);
+			Properties props = new Properties();
+			props.load(buffer);
 
-		Map<String, Map<String, String>> n = new HashMap<String, Map<String, String>>();
+			Map<String, Map<String, String>> n = new HashMap<String, Map<String, String>>();
 
-		props.forEach((k, v) -> {
-			String propertyKey = k.toString();
-			int s = propertyKey.lastIndexOf(nodeSeparatorChar);
+			props.forEach((k, v) -> {
+				String propertyKey = k.toString();
+				int s = propertyKey.lastIndexOf(nodeSeparatorChar);
 
-			String node = propertyKey.substring(0, s);
-			String key = propertyKey.substring(s + 1);
+				// BUG-22: ignore malformed keys instead of aborting the entire load
+				if (s < 0) {
+					debug.warning(String.format("Ignoring malformed preference key (no separator): %s", propertyKey));
+					return;
+				}
 
-			n.computeIfAbsent(node, this::newKeyValueMap).put(key, v.toString());
-		});
+				String node = propertyKey.substring(0, s);
+				String key = propertyKey.substring(s + 1);
 
-		mergeNodes(n);
+				n.computeIfAbsent(node, this::newKeyValueMap).put(key, v.toString());
+			});
+
+			mergeNodes(n);
+			loadFailed = false;
+		} catch (Exception e) {
+			// BUG-22: mark load as failed so flush doesn't overwrite the file
+			loadFailed = true;
+			throw e instanceof IOException ? (IOException) e : new IOException("Failed to load preferences", e);
+		}
 	}
 
 	public void flush() throws IOException {
 		if (modCount == 0) {
+			return;
+		}
+
+		// BUG-22: don't overwrite a good file when the last load failed
+		if (loadFailed) {
+			debug.warning("Skipping preference flush because the last load failed (preserving backup)");
 			return;
 		}
 
@@ -148,11 +174,21 @@ public class PropertyFileBackingStore {
 
 		ByteBuffer data = UTF_8.encode(CharBuffer.wrap(buffer.getBuffer()));
 
-		try (FileChannel out = FileChannel.open(store, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+		// BUG-22: atomic write — temp file + ATOMIC_MOVE to prevent truncation on crash
+		Path temp = store.resolveSibling(store.getFileName() + ".tmp");
+
+		try (FileChannel out = FileChannel.open(temp, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
 			try (FileLock lock = out.lock()) {
 				out.write(data);
 				out.truncate(out.position());
 			}
+		}
+
+		try {
+			Files.move(temp, store, StandardCopyOption.ATOMIC_MOVE);
+		} catch (AtomicMoveNotSupportedException e) {
+			// fallback for filesystems without atomic move
+			Files.move(temp, store, StandardCopyOption.REPLACE_EXISTING);
 		}
 
 		modCount = 0; // reset

@@ -66,38 +66,24 @@ class RenameAction extends AbstractAction {
 		}
 
 		Window window = getWindow(evt.getSource());
-		withWaitCursor(window, () -> {
-			Map<File, File> renameMap = validate(model.getRenameMap(), window);
+		Map<File, File> renameMap = validate(model.getRenameMap(), window);
 
-			if (renameMap.isEmpty()) {
-				return;
-			}
+		if (renameMap.isEmpty()) {
+			return;
+		}
 
-			List<Match<Object, File>> matches = new ArrayList<Match<Object, File>>(model.matches());
-			StandardRenameAction action = (StandardRenameAction) getValue(RENAME_ACTION);
+		List<Match<Object, File>> matches = new ArrayList<Match<Object, File>>(model.matches());
+		StandardRenameAction action = (StandardRenameAction) getValue(RENAME_ACTION);
 
-			// start processing
-			Map<File, File> renameLog = new LinkedHashMap<File, File>();
+		// disable actions while running
+		setEnabled(false);
 
-			try {
-				if (useNativeShell() && NativeRenameAction.isSupported(action)) {
-					// call on EDT
-					NativeRenameWorker worker = new NativeRenameWorker(renameMap, renameLog, NativeRenameAction.valueOf(action.name()));
-					worker.call(null, null, null);
-				} else {
-					// call and wait
-					StandardRenameWorker worker = new StandardRenameWorker(renameMap, renameLog, action);
-					String message = String.format("%s %d %s. This may take a while.", action.getDisplayVerb(), renameMap.size(), renameMap.size() == 1 ? "file" : "files");
-					ProgressMonitor.runTask(action.getDisplayName(), message, worker).get();
-				}
-			} catch (CancellationException e) {
-				debug.finest(e::toString);
-			} catch (Throwable e) {
-				log.log(Level.SEVERE, e, cause(getRootCause(e)));
-			}
+		// completion handler: runs on EDT after worker finishes
+		Consumer<Map<File, File>> onComplete = renameLog -> {
+			setEnabled(true);
 
 			// abort if nothing happened
-			if (renameLog.isEmpty()) {
+			if (renameLog == null || renameLog.isEmpty()) {
 				return;
 			}
 
@@ -117,7 +103,36 @@ class RenameAction extends AbstractAction {
 			if (action == StandardRenameAction.MOVE) {
 				deleteEmptyFolders(renameLog);
 			}
-		});
+		};
+
+		try {
+			if (useNativeShell() && NativeRenameAction.isSupported(action)) {
+				// call on EDT
+				Map<File, File> renameLog = new LinkedHashMap<File, File>();
+				NativeRenameWorker worker = new NativeRenameWorker(renameMap, renameLog, NativeRenameAction.valueOf(action.name()));
+				worker.call(null, null, null);
+				onComplete.accept(renameLog);
+			} else {
+				// async: do not block the EDT; worker returns its own renameLog
+				StandardRenameWorker worker = new StandardRenameWorker(renameMap, action);
+				String message = String.format("%s %d %s. This may take a while.", action.getDisplayVerb(), renameMap.size(), renameMap.size() == 1 ? "file" : "files");
+				ProgressMonitor.runTask(action.getDisplayName(), message, worker, result -> {
+					if (result.isError()) {
+						Throwable e = result.getError();
+						if (!(e instanceof CancellationException)) {
+							log.log(Level.SEVERE, e, cause(getRootCause(e)));
+						}
+					}
+					onComplete.accept(result.getValue());
+				});
+			}
+		} catch (CancellationException e) {
+			debug.finest(e::toString);
+			setEnabled(true);
+		} catch (Throwable e) {
+			log.log(Level.SEVERE, e, cause(getRootCause(e)));
+			setEnabled(true);
+		}
 	}
 
 	private void storeMetaInfo(Map<File, File> renameMap, List<Match<Object, File>> matches) {
@@ -222,18 +237,18 @@ class RenameAction extends AbstractAction {
 	protected static class StandardRenameWorker implements ProgressWorker<Map<File, File>> {
 
 		private Map<File, File> renameMap;
-		private Map<File, File> renameLog;
-
 		private StandardRenameAction action;
 
-		public StandardRenameWorker(Map<File, File> renameMap, Map<File, File> renameLog, StandardRenameAction action) {
+		public StandardRenameWorker(Map<File, File> renameMap, StandardRenameAction action) {
 			this.renameMap = renameMap;
-			this.renameLog = renameLog;
 			this.action = action;
 		}
 
 		@Override
 		public Map<File, File> call(Consumer<String> message, BiConsumer<Long, Long> progress, Supplier<Boolean> cancelled) throws Exception {
+			// worker owns its own log — no shared mutable state with the EDT
+			Map<File, File> renameLog = new LinkedHashMap<File, File>();
+
 			for (Entry<File, File> mapping : renameMap.entrySet()) {
 				if (cancelled.get()) {
 					return renameLog;

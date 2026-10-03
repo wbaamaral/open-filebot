@@ -60,46 +60,28 @@ import net.filebot.Settings;
 public final class SwingUI {
 
 	public static void initTheme() {
-		String theme = getThemePreference();
-		applyTheme(theme);
+		Appearance.load().apply();
 	}
 
 	public static String getThemePreference() {
-		String prop = System.getProperty("net.filebot.theme");
-		if (prop != null && !prop.isEmpty()) {
-			return prop.trim().toLowerCase();
-		}
-		return Settings.forPackage(SwingUI.class).entry("ui.theme").defaultValue("system").getValue();
+		return Appearance.load().theme.key;
 	}
 
 	public static void setThemePreference(String theme) {
-		Settings.forPackage(SwingUI.class).entry("ui.theme").setValue(theme);
-		applyTheme(theme);
-		try {
-			com.formdev.flatlaf.FlatLaf.updateUI();
-		} catch (Throwable ignored) {}
+		setAppearance(Appearance.load().withTheme(Appearance.Theme.forKey(theme)));
+	}
+
+	/**
+	 * Store and apply the given appearance and update all windows.
+	 */
+	public static void setAppearance(Appearance appearance) {
+		appearance.store();
+		appearance.apply();
+		Appearance.refresh();
 	}
 
 	public static void applyTheme(String theme) {
-		try {
-			if ("dark".equalsIgnoreCase(theme)) {
-				com.formdev.flatlaf.FlatDarkLaf.setup();
-			} else if ("light".equalsIgnoreCase(theme)) {
-				com.formdev.flatlaf.FlatLightLaf.setup();
-			} else if ("nimbus".equalsIgnoreCase(theme)) {
-				setNimbusLookAndFeel();
-			} else {
-				// system / auto-detect
-				if (isSystemInDarkMode()) {
-					com.formdev.flatlaf.FlatDarkLaf.setup();
-				} else {
-					com.formdev.flatlaf.FlatLightLaf.setup();
-				}
-			}
-		} catch (Throwable e) {
-			debug.log(Level.WARNING, "Failed to apply FlatLaf theme: " + theme, e);
-			setNimbusLookAndFeel();
-		}
+		Appearance.load().withTheme(Appearance.Theme.forKey(theme)).apply();
 	}
 
 	public static boolean isDarkTheme() {
@@ -111,32 +93,69 @@ public final class SwingUI {
 		return false;
 	}
 
-	public static boolean isSystemInDarkMode() {
-		if (com.sun.jna.Platform.isLinux()) {
-			try {
-				Process p = new ProcessBuilder("gsettings", "get", "org.gnome.desktop.interface", "color-scheme").start();
-				try (java.util.Scanner s = new java.util.Scanner(p.getInputStream())) {
-					if (s.hasNextLine()) {
-						String val = s.nextLine().toLowerCase();
-						if (val.contains("dark")) return true;
-						if (val.contains("light") || val.contains("default")) return false;
-					}
-				}
-			} catch (Throwable ignored) {}
+	/** Cached result of system dark-mode detection (computed once, lazily). */
+	private static volatile Boolean systemDarkMode = null;
 
-			try {
-				Process p = new ProcessBuilder("dbus-send", "--print-reply=literal", "--dest=org.freedesktop.portal.Desktop",
-					"/org/freedesktop/portal/desktop", "org.freedesktop.portal.Settings.Read",
-					"string:org.freedesktop.appearance", "string:color-scheme").start();
-				try (java.util.Scanner s = new java.util.Scanner(p.getInputStream())) {
-					if (s.hasNextLine()) {
-						String val = s.nextLine().trim();
-						if (val.contains("uint32 1")) return true;
-					}
-				}
-			} catch (Throwable ignored) {}
+	/**
+	 * Detect whether the system is in dark mode. The result is cached after the
+	 * first call. Detection uses external processes with a 2-second timeout and
+	 * never blocks the EDT indefinitely.
+	 */
+	public static boolean isSystemInDarkMode() {
+		Boolean cached = systemDarkMode;
+		if (cached != null) {
+			return cached;
+		}
+
+		boolean dark = detectSystemDarkMode();
+		systemDarkMode = dark;
+		return dark;
+	}
+
+	private static boolean detectSystemDarkMode() {
+		if (com.sun.jna.Platform.isLinux()) {
+			// 1. GNOME gsettings
+			String gnome = runCommand(2, "gsettings", "get", "org.gnome.desktop.interface", "color-scheme");
+			if (gnome != null) {
+				String val = gnome.toLowerCase();
+				if (val.contains("dark")) return true;
+				// 'default' and 'light' are inconclusive — check the portal too
+				if (val.contains("light")) return false;
+			}
+
+			// 2. XDG desktop portal (covers GNOME 'default', KDE, and others)
+			String portal = runCommand(2, "dbus-send", "--print-reply=literal", "--dest=org.freedesktop.portal.Desktop",
+				"/org/freedesktop/portal/desktop", "org.freedesktop.portal.Settings.Read",
+				"string:org.freedesktop.appearance", "string:color-scheme");
+			if (portal != null) {
+				// uint32 1 = dark, uint32 0 = light, uint32 2 = no preference
+				if (portal.contains("uint32 1")) return true;
+				if (portal.contains("uint32 0")) return false;
+			}
 		}
 		return false;
+	}
+
+	/**
+	 * Run a command with a timeout, returning trimmed stdout or {@code null} on
+	 * failure/timeout. Stderr is discarded.
+	 */
+	private static String runCommand(int timeoutSeconds, String... command) {
+		try {
+			ProcessBuilder pb = new ProcessBuilder(command);
+			pb.redirectErrorStream(true);
+			Process p = pb.start();
+			if (!p.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)) {
+				p.destroyForcibly();
+				return null;
+			}
+			try (java.util.Scanner s = new java.util.Scanner(p.getInputStream())) {
+				String line = s.hasNextLine() ? s.nextLine().trim() : null;
+				return (line != null && !line.isEmpty()) ? line : null;
+			}
+		} catch (Throwable ignored) {
+			return null;
+		}
 	}
 
 	public static void setNimbusLookAndFeel() {
@@ -579,14 +598,6 @@ public final class SwingUI {
 				}
 			}
 		}
-	}
-
-	public static void initJavaFX() {
-		// Pure Swing implementation, no JavaFX runtime required
-	}
-
-	public static void invokeJavaFX(Runnable r) {
-		SwingUtilities.invokeLater(r);
 	}
 
 	/**

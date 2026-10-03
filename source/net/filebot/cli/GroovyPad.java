@@ -200,11 +200,11 @@ public class GroovyPad extends JFrame {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	protected void cancelScript(ActionEvent evt) {
 		if (currentRunner != null && !currentRunner.isDone()) {
+			// interrupt the worker thread (deprecated thread-killing API is unsupported on Java 20+)
 			currentRunner.cancel(true);
-			currentRunner.getExecutionThread().stop();
+			currentRunner.getExecutionThread().interrupt();
 
 			try {
 				currentRunner.get(2, TimeUnit.SECONDS);

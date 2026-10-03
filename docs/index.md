@@ -29,9 +29,10 @@ Nosso mais sincero agradecimento a **Reinhard Pointner** ([@rednoah](https://git
   * `{hdr}`: Detecção automática de formatos HDR (Dolby Vision, HDR10+, HDR10, HLG).
   * `{edition}`: Reconhecimento de edições especiais (*Director's Cut, Extended, Remastered, IMAX, etc.*).
 * ⚙️ **Novos Recursos de Linha de Comando (CLI)**:
-  * `--apply prune`: Limpeza recursiva de pastas vazias após renomear.
+  * `--apply prune`: Após `--action move`, remove as pastas de origem que ficaram vazias (ou só com `Thumbs.db`/`.DS_Store`), subindo até a pasta de entrada, que é preservada. Não roda com `--action test` nem com ações que mantêm o original (copy, hardlink, symlink, clone, duplicate).
   * `--apply date`: Sincronização automática da data do arquivo com a data de exibição da mídia.
   * `--action duplicate`: Criação rápida de cópias mantendo os arquivos originais intactos.
+* 🎨 **Aparência configurável e consistente**: Menu **Aparência → Configurar aparência…** com tema (Automático, Claro, Escuro, Clássico), fonte e tamanho, com pré-visualização e aplicação imediata. Por padrão, usa as fontes embutidas **Inter** (interface) e **JetBrains Mono** (expressões de formato), para ter a mesma aparência em Linux, Windows e macOS; a fonte do sistema continua disponível como opção. Ícones SVG nítidos em qualquer escala e cores, espaçamentos e tipografia definidos por [design tokens](DESIGN_TOKENS.md).
 * 🐧 **Suporte Nativo a Linux Moderno**: MediaInfo nativo, Chromaprint (`fpcalc`), suporte a arquivos compactados via Apache Commons VFS e descompactação 7-Zip.
 
 ---
@@ -59,7 +60,7 @@ filebot
 ### Linha de Comando (CLI)
 Exemplo de renomeação automática de episódios:
 ```bash
-filebot -rename "/caminho/dos/downloads" --db TheTVDB -non-strict --format "{n} - {s00e00} - {t}" --apply prune date
+filebot -rename "/caminho/dos/downloads" --db TheTVDB -non-strict --format "{n} - {s00e00} - {t}" --apply prune,date
 ```
 
 Exemplo de verificação de sistema e bibliotecas:
@@ -73,6 +74,7 @@ filebot -script fn:sysinfo
 
 * [Guia Completo de Compilação Local](COMPILACAO.md)
 * [Planejamento de Novas Funcionalidades](FUTURE_FEATURES.md)
+* [Auditoria e Roadmap Incremental](plan/auditoria-roadmap-modernizacao.md)
 * [Repositório de Dados e Scripts Independentes](https://github.com/wbaamaral/filebot-data)
 
 ---

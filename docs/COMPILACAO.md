@@ -128,6 +128,33 @@ ant deb
 * `ant appx`: Gera pacote UWP para Windows 10/11.
 * `ant cask`: Gera bundle de aplicativo para macOS.
 
+### 4.5 Testes Automatizados
+
+```bash
+# Suíte offline: não usa rede e falha o build se qualquer teste falhar
+ant test
+
+# Testes que criam janelas e painéis reais (precisam de display; em servidor/CI use xvfb-run)
+xvfb-run -a ant test-gui
+
+# Testes de contrato com serviços externos (TMDb, TheTVDB, AniDB, OpenSubtitles...)
+# Não bloqueiam o build: falhas podem vir de mudanças nos serviços ou nos dados
+ant test-online
+```
+
+* **Suítes:** `net.filebot.OfflineTests` (bloqueante), `net.filebot.GuiTests`
+  (bloqueante, precisa de display) e `net.filebot.OnlineTests` (opcional). `net.filebot.AllTests` reúne as duas para execução em IDE.
+* **Isolamento:** ambos os alvos rodam em `build/test-sandbox/`, com
+  `application.dir`, `java.io.tmpdir`, preferências (`FilePreferencesFactory`)
+  e lixeira (`net.filebot.trash.home`) apontando para lá, sempre em modo
+  headless. Os testes nunca tocam `~/.filebot`, `/tmp` nem as
+  preferências reais do usuário; o diretório é recriado a cada execução.
+* **Relatórios:** saída em texto no console e XML em `build/reports/test/`.
+* **Novos testes:** testes sem rede entram em `OfflineTests`; testes que dependem
+  de APIs ou dados remotos entram em `OnlineTests`. Para arquivos temporários,
+  use `org.junit.rules.TemporaryFolder`, que já fica dentro do sandbox.
+* **Conferir que a suíte é realmente offline (Linux):** `unshare -rn ant test`.
+
 ---
 
 ## 5. Execução do FileBot Após o Build

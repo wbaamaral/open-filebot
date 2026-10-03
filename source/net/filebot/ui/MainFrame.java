@@ -16,11 +16,14 @@ import java.awt.Desktop;
 import java.awt.Dialog.ModalExclusionType;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Insets;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetAdapter;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.logging.Level;
@@ -28,6 +31,7 @@ import java.util.logging.Level;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
@@ -58,17 +62,52 @@ public class MainFrame extends JFrame {
 		selectionList = new PanelSelectionList(panels);
 		headerPanel = new HeaderPanel();
 
-		JScrollPane selectionListScrollPane = new JScrollPane(selectionList, VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane selectionListScrollPane = new JScrollPane(selectionList, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER) {
+
+			@Override
+			public Dimension getPreferredSize() {
+				// reserve space for the vertical scroll bar when it is shown, so that it never covers the list cells
+				Dimension size = super.getPreferredSize();
+				Insets insets = getInsets();
+				int width = getViewport().getView().getPreferredSize().width + insets.left + insets.right;
+				if (getVerticalScrollBar().isVisible()) {
+					width += getVerticalScrollBar().getPreferredSize().width;
+				}
+				return new Dimension(width, size.height);
+			}
+		};
+
+		// update layout when the scroll bar appears or disappears (e.g. small window, large font)
+		selectionListScrollPane.getVerticalScrollBar().addComponentListener(new ComponentAdapter() {
+
+			@Override
+			public void componentShown(ComponentEvent e) {
+				selectionListScrollPane.revalidate();
+			}
+
+			@Override
+			public void componentHidden(ComponentEvent e) {
+				selectionListScrollPane.revalidate();
+			}
+		});
 		selectionListScrollPane.setOpaque(false);
 		selectionListScrollPane.setBorder(createCompoundBorder(new ShadowBorder(), isMacApp() ? createLineBorder(new Color(0x809DB8), 1, false) : selectionListScrollPane.getBorder()));
 
-		headerPanel.getTitleLabel().setBorder(createEmptyBorder(8, 90, 10, 0));
-
 		JComponent c = (JComponent) getContentPane();
-		c.setLayout(new MigLayout("insets 0, fill, hidemode 3", String.format("%dpx[fill]", isUbuntuApp() ? 110 : 95), "fill"));
+		c.setLayout(new MigLayout("insets 0, fill, hidemode 3", "0px[fill]", "fill"));
 
 		c.add(selectionListScrollPane, "pos 6px 10px n 100%-12px");
 		c.add(headerPanel, "growx, dock north");
+
+		// the panel selection list overlaps the header, so the content column must start right after the list, and the width of the list depends on font and theme
+		updateContentInsets(selectionListScrollPane);
+		selectionListScrollPane.addComponentListener(new ComponentAdapter() {
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+				updateContentInsets(selectionListScrollPane);
+			}
+		});
 
 		// restore selected panel
 		try {
@@ -97,10 +136,13 @@ public class MainFrame extends JFrame {
 
 		// KEYBOARD SHORTCUTS
 		installAction(getRootPane(), getKeyStroke(VK_DELETE, CTRL_DOWN_MASK | SHIFT_DOWN_MASK), newAction("Clear Cache", evt -> {
-			withWaitCursor(getRootPane(), () -> {
-				CacheManager.getInstance().clearAll();
-				log.info("Cache has been cleared");
-			});
+			int result = JOptionPane.showConfirmDialog(this, "Limpar todo o cache de rede e dados?\nOs dados serão baixados novamente na próxima busca.", "Limpar Cache", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (result == JOptionPane.OK_OPTION) {
+				withWaitCursor(getRootPane(), () -> {
+					CacheManager.getInstance().clearAll();
+					log.info("Cache has been cleared");
+				});
+			}
 		}));
 
 		installAction(getRootPane(), getKeyStroke(VK_F5, 0), newAction("Run", evt -> {
@@ -130,6 +172,22 @@ public class MainFrame extends JFrame {
 		installAction(this.getRootPane(), getKeyStroke(VK_F1, 0), newAction("Help", evt -> GettingStartedStage.start()));
 
 		SwingEventBus.getInstance().register(this);
+	}
+
+	private static final int SELECTION_LIST_MARGIN = 6;
+
+	private void updateContentInsets(JComponent selectionList) {
+		int width = selectionList.getPreferredSize().width + 2 * SELECTION_LIST_MARGIN;
+
+		JComponent c = (JComponent) getContentPane();
+		MigLayout layout = (MigLayout) c.getLayout();
+		String columns = String.format("%dpx[fill]", width);
+
+		if (!columns.equals(layout.getColumnConstraints())) {
+			layout.setColumnConstraints(columns);
+			headerPanel.getTitleLabel().setBorder(createEmptyBorder(8, width, 10, 0)); // center title above the content area
+			c.revalidate();
+		}
 	}
 
 	@Subscribe
@@ -176,6 +234,18 @@ public class MainFrame extends JFrame {
 
 		private static final int SELECTDELAY_ON_DRAG_OVER = 300;
 
+		@Override
+		public void updateUI() {
+			super.updateUI();
+
+			// cell size depends on the current font, so it must be computed again whenever the font changes
+			Object prototype = getPrototypeCellValue();
+			if (prototype != null) {
+				setPrototypeCellValue(null);
+				setPrototypeCellValue(prototype);
+			}
+		}
+
 		public PanelSelectionList(PanelBuilder[] builders) {
 			super(builders);
 
@@ -183,7 +253,7 @@ public class MainFrame extends JFrame {
 			setPrototypeCellValue(stream(builders).max(comparingInt(p -> p.getName().length())).get());
 
 			setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			setBorder(createEmptyBorder(4, 5, 4, 5));
+			setBorder(createEmptyBorder(4, 5, 4, 9)); // 4px extra space on the right (keeps the scroll bar of the Nimbus theme clear of the icons), cells keep their position
 
 			// initialize "drag over" panel selection
 			new DropTarget(this, new DragDropListener());

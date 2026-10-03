@@ -203,6 +203,19 @@
 			<zipfileset src="${dir.dist}/lib/flatlaf.jar">
 				<include name="com/formdev/flatlaf/**" />
 			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/flatlaf-fonts-inter.jar">
+				<include name="com/formdev/flatlaf/fonts/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/flatlaf-fonts-jetbrains-mono.jar">
+				<include name="com/formdev/flatlaf/fonts/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/flatlaf-extras.jar">
+				<include name="com/formdev/flatlaf/extras/**" />
+			</zipfileset>
+			<zipfileset src="${dir.dist}/lib/jsvg.jar">
+				<include name="com/github/weisj/jsvg/**" />
+				<include name="META-INF/services/**" />
+			</zipfileset>
 
 			<!-- include IO libraries -->
 			<zipfileset src="${dir.dist}/lib/xz.jar">
@@ -735,6 +748,10 @@
 			<tarfileset dir="${dir.portable}" filemode="755" includes="*.sh, filebot, lib/**/fpcalc" />
 			<tarfileset dir="${dir.portable}" excludes="*.sh, filebot, lib/**/fpcalc" />
 		</tar>
+
+		<!-- stable symlink without version so ./filebot works across version bumps -->
+		<delete dir="${dir.dist}/portable" failonerror="false" />
+		<symlink link="${dir.dist}/portable" resource="${release}-portable" overwrite="true" />
 	</target>
 
 
@@ -788,6 +805,10 @@
 				<include name="rsyntaxtextarea.jar" />
 				<include name="lanterna.jar" />
 				<include name="flatlaf.jar" />
+				<include name="flatlaf-fonts-inter.jar" />
+				<include name="flatlaf-fonts-jetbrains-mono.jar" />
+				<include name="flatlaf-extras.jar" />
+				<include name="jsvg.jar" />
 				<include name="xz.jar" />
 				<include name="sevenzipjbinding.jar" />
 				<include name="commons-io.jar" />
@@ -804,6 +825,7 @@
 				<include name="slf4j-api.jar" />
 				<include name="slf4j-jdk14.jar" />
 				<include name="groovy-all.jar" />
+				<include name="groovy-sandbox.jar" />
 				<include name="ivy.jar" />
 				<include name="jsoup.jar" />
 				<include name="ant.jar" />
@@ -864,17 +886,19 @@
 	</target>
 
 
-	<target name="test" depends="build" description="Run automated unit tests">
+	<target name="test-compile" depends="build">
 		<property name="dir.test" location="${basedir}/test" />
 		<property name="dir.build.test" location="${basedir}/build/test" />
 		<property name="dir.reports.test" location="${basedir}/build/reports/test" />
+		<property name="dir.sandbox.test" location="${basedir}/build/test-sandbox" />
+		<property name="dir.native.test" location="${dir.lib}/native/linux-amd64" /><!-- tests that require native libraries are skipped if they can't be loaded -->
 
 		<mkdir dir="${dir.build.test}" />
 		<mkdir dir="${dir.reports.test}" />
 
 		<path id="test.classpath">
 			<pathelement location="${dir.build}" />
-			<fileset dir="${dir.dist}/lib" includes="*.jar" />
+			<fileset dir="${dir.dist}/lib" includes="*.jar" excludes="filebot.jar" /><!-- test against current build classes, not a stale application jar -->
 			<fileset dir="${dir.lib}/ivy/jar" includes="junit*.jar, hamcrest*.jar" />
 		</path>
 
@@ -883,16 +907,60 @@
 			<classpath refid="test.classpath" />
 		</javac>
 
-		<!-- run tests -->
-		<junit printsummary="yes" haltonfailure="no" fork="yes">
-			<jvmarg line="${java.application.options}" />
-			<classpath>
-				<pathelement location="${dir.build.test}" />
-				<path refid="test.classpath" />
-			</classpath>
-			<formatter type="plain" usefile="false" />
-			<test name="net.filebot.AllTests" todir="${dir.reports.test}" />
-		</junit>
+		<!-- copy test resources (fixtures) to classpath -->
+		<copy todir="${dir.build.test}">
+			<fileset dir="${dir.test}" excludes="**/*.java" />
+		</copy>
+	</target>
+
+
+	<!-- run a test suite in a fresh sandbox so that tests never touch the real application folder, temporary files or preferences -->
+	<macrodef name="run-tests">
+		<attribute name="suite" />
+		<attribute name="failureproperty" />
+		<attribute name="headless" default="true" />
+		<sequential>
+			<delete dir="${dir.sandbox.test}" />
+			<mkdir dir="${dir.sandbox.test}/appdata" />
+			<mkdir dir="${dir.sandbox.test}/tmp" />
+
+			<junit printsummary="yes" haltonfailure="no" fork="yes" failureproperty="@{failureproperty}" errorproperty="@{failureproperty}">
+				<jvmarg line="${java.application.options}" />
+				<sysproperty key="net.filebot.test.root" file="${dir.sandbox.test}" />
+				<sysproperty key="application.dir" file="${dir.sandbox.test}/appdata" />
+				<sysproperty key="java.io.tmpdir" file="${dir.sandbox.test}/tmp" />
+				<sysproperty key="java.util.prefs.PreferencesFactory" value="net.filebot.util.prefs.FilePreferencesFactory" />
+				<sysproperty key="net.filebot.util.prefs.file" file="${dir.sandbox.test}/appdata/prefs.properties" />
+				<sysproperty key="java.library.path" path="${dir.native.test}" />
+				<sysproperty key="java.awt.headless" value="@{headless}" />
+				<sysproperty key="net.filebot.trash.home" file="${dir.sandbox.test}/trash" />
+				<classpath>
+					<pathelement location="${dir.build.test}" />
+					<path refid="test.classpath" />
+				</classpath>
+				<formatter type="plain" usefile="false" />
+				<formatter type="xml" />
+				<test name="@{suite}" todir="${dir.reports.test}" />
+			</junit>
+		</sequential>
+	</macrodef>
+
+
+	<target name="test" depends="test-compile" description="Run offline unit tests (fails the build on any test failure)">
+		<run-tests suite="net.filebot.OfflineTests" failureproperty="test.offline.failed" />
+		<fail if="test.offline.failed" message="Offline unit tests failed. See ${dir.reports.test}" />
+	</target>
+
+
+	<target name="test-gui" depends="test-compile" description="Run tests that create real windows (requires a display, e.g. xvfb-run ant test-gui)">
+		<run-tests suite="net.filebot.GuiTests" failureproperty="test.gui.failed" headless="false" />
+		<fail if="test.gui.failed" message="GUI tests failed. See ${dir.reports.test}" />
+	</target>
+
+
+	<target name="test-online" depends="test-compile" description="Run contract tests against live external services (non-blocking)">
+		<run-tests suite="net.filebot.OnlineTests" failureproperty="test.online.failed" />
+		<echo level="warning" message="Online contract tests failed. Failures may be caused by external services or changed live data. See ${dir.reports.test}" if:set="test.online.failed" xmlns:if="ant:if" />
 	</target>
 
 

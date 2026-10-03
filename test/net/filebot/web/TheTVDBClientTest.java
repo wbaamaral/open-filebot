@@ -5,8 +5,14 @@ import static org.junit.Assert.*;
 import java.util.List;
 import java.util.Locale;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
+/**
+ * Legacy TheTVDB v2 API tests. Requires live network access.
+ * @see <a href="https://www.themoviedb.org/documentation/api">TheTVDB migration</a>
+ */
+@Ignore("Legacy TheTVDB v2 API — requires live network; pending migration to TheTVDB v4 (T11). Run via ant test-online.")
 public class TheTVDBClientTest {
 
 	static TheTVDBClient db = new TheTVDBClient("BA864DEE427E384A");

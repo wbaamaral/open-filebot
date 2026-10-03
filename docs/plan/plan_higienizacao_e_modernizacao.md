@@ -1,5 +1,10 @@
 # Plano de Implementação: Higienização Completa e Modernização de Features do FileBot
 
+> **Documento histórico:** parte relevante deste plano já foi executada. Para o
+> estado auditado em 2026-10-03, prioridades, dependências e próximas tarefas,
+> consulte
+> [`auditoria-roadmap-modernizacao.md`](auditoria-roadmap-modernizacao.md).
+
 Este plano estabelece a estratégia técnica para:
 1. **Higienização Total**: Eliminação de todas as chamadas de verificação de atualização, alertas de upgrade para o site comercial do criador original (`rednoah` / `filebot.net`), nagware de doação/review forçado e dependências de servidores proprietários.
 2. **Implementação das Features de Modernização**: Execução progressiva das melhorias levantadas no início do projeto e catalogadas em [`docs/FUTURE_FEATURES.md`](file:///home/wbaamaral/acervo/projetos/filebot/docs/FUTURE_FEATURES.md).

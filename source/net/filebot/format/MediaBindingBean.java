@@ -1077,26 +1077,37 @@ public class MediaBindingBean {
 
 	@Define("hdr")
 	public String getHDR() {
-		String hdrFormat = getMediaInfo(StreamKind.Video, 0, "HDR_Format");
-		if (hdrFormat != null && !hdrFormat.isEmpty()) {
-			if (hdrFormat.toLowerCase().contains("dolby vision")) return "Dolby Vision";
-			if (hdrFormat.toLowerCase().contains("hdr10+")) return "HDR10+";
-			if (hdrFormat.toLowerCase().contains("hdr10")) return "HDR10";
-			if (hdrFormat.toLowerCase().contains("hlg")) return "HLG";
-			return hdrFormat;
+		try {
+			String hdrFormat = getMediaInfo(StreamKind.Video, 0, "HDR_Format");
+			if (hdrFormat != null && !hdrFormat.isEmpty()) {
+				if (hdrFormat.toLowerCase().contains("dolby vision")) return "Dolby Vision";
+				if (hdrFormat.toLowerCase().contains("hdr10+")) return "HDR10+";
+				if (hdrFormat.toLowerCase().contains("hdr10")) return "HDR10";
+				if (hdrFormat.toLowerCase().contains("hlg")) return "HLG";
+				return hdrFormat;
+			}
+
+			// HLG via transfer_characteristics (BUG-16: HLG often appears here, not in HDR_Format)
+			String transfer = getMediaInfo(StreamKind.Video, 0, "transfer_characteristics");
+			if (transfer != null && transfer.toLowerCase().contains("hlg")) {
+				return "HLG";
+			}
+		} catch (Exception e) {
+			// MediaInfo unavailable (e.g. file does not exist) — fall through to filename matching
 		}
 
 		String name = mediaFile != null ? mediaFile.getName() : "";
-		if (name.matches("(?i).*\\b(Dolby[ ._-]?Vision|DoVi|DV)\\b.*")) {
+		// use explicit delimiters instead of \b (BUG-16: \b fails after + and .)
+		if (name.matches("(?i).*((?<![A-Za-z0-9])(Dolby[ ._-]?Vision|DoVi)(?![A-Za-z0-9])|(?<![A-Za-z0-9])DV(?=[. _-](HDR|DoVi|HEVC|H265|AVC|Profile|P5|P8))).*")) {
 			return "Dolby Vision";
 		}
-		if (name.matches("(?i).*\\b(HDR10\\+|HDR10Plus)\\b.*")) {
+		if (name.matches("(?i).*((?<![A-Za-z0-9])HDR10\\+(?![A-Za-z0-9])|(?<![A-Za-z0-9])HDR10Plus(?![A-Za-z0-9])).*")) {
 			return "HDR10+";
 		}
-		if (name.matches("(?i).*\\b(HDR10|HDR)\\b.*")) {
+		if (name.matches("(?i).*((?<![A-Za-z0-9])HDR10(?![A-Za-z0-9])|(?<![A-Za-z0-9])HDR(?![A-Za-z0-9])).*")) {
 			return "HDR10";
 		}
-		if (name.matches("(?i).*\\b(HLG)\\b.*")) {
+		if (name.matches("(?i).*(?<![A-Za-z0-9])HLG(?![A-Za-z0-9]).*")) {
 			return "HLG";
 		}
 		return null;

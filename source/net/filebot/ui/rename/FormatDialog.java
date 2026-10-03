@@ -1,6 +1,5 @@
 package net.filebot.ui.rename;
 
-import static java.awt.Font.*;
 import static java.util.Collections.*;
 import static java.util.stream.Collectors.*;
 import static javax.swing.BorderFactory.*;
@@ -10,11 +9,9 @@ import static net.filebot.util.ExceptionUtilities.*;
 import static net.filebot.util.FileUtilities.*;
 import static net.filebot.util.ui.SwingUI.*;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
@@ -55,9 +52,6 @@ import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import net.filebot.ResourceManager;
@@ -70,15 +64,13 @@ import net.filebot.format.MediaBindingBean;
 import net.filebot.format.SuppressedThrowables;
 import net.filebot.media.MetaAttributes;
 import net.filebot.platform.mac.MacAppUtilities;
+import net.filebot.ui.CodeEditor;
 import net.filebot.util.DefaultThreadFactory;
 import net.filebot.util.PreferencesList;
 import net.filebot.util.PreferencesMap.PreferencesEntry;
-import net.filebot.util.ui.GradientStyle;
 import net.filebot.util.ui.LazyDocumentListener;
 import net.filebot.util.ui.LinkButton;
 import net.filebot.util.ui.ProgressIndicator;
-import net.filebot.util.ui.notification.SeparatorBorder;
-import net.filebot.util.ui.notification.SeparatorBorder.Position;
 import net.filebot.web.AudioTrackFormat;
 import net.filebot.web.Datasource;
 import net.filebot.web.EpisodeFormat;
@@ -86,6 +78,9 @@ import net.filebot.web.EpisodeListProvider;
 import net.filebot.web.MovieFormat;
 import net.filebot.web.MovieIdentificationService;
 import net.filebot.web.MusicIdentificationService;
+import net.filebot.util.ui.Appearance.Typography;
+import net.filebot.util.ui.ThemeSeparatorBorder;
+import net.filebot.util.ui.Tokens;
 import net.miginfocom.swing.MigLayout;
 
 public class FormatDialog extends JDialog {
@@ -103,7 +98,7 @@ public class FormatDialog extends JDialog {
 	private JLabel preview = new JLabel();
 	private JLabel status = new JLabel();
 
-	private RSyntaxTextArea editor = createEditor();
+	private CodeEditor editor = createEditor();
 	private ProgressIndicator progressIndicator = new ProgressIndicator();
 
 	private JLabel title = new JLabel();
@@ -196,12 +191,12 @@ public class FormatDialog extends JDialog {
 		progressIndicator.setVisible(false);
 
 		// bold title label in header
-		title.setFont(title.getFont().deriveFont(BOLD));
+		Typography.HEADING.apply(title);
 
 		JPanel header = new JPanel(new MigLayout("insets dialog, nogrid, novisualpadding"));
 
-		header.setBackground(Color.white);
-		header.setBorder(new SeparatorBorder(1, new Color(0xB4B4B4), new Color(0xACACAC), GradientStyle.LEFT_TO_RIGHT, Position.BOTTOM));
+		Tokens.styleClass(header, Tokens.STYLE_HEADER);
+		header.setBorder(new ThemeSeparatorBorder());
 
 		header.add(progressIndicator, "pos 1al 0al, hidemode 3");
 		header.add(title, "wmin 150px, wrap unrel:push");
@@ -358,24 +353,8 @@ public class FormatDialog extends JDialog {
 		}
 	}
 
-	private RSyntaxTextArea createEditor() {
-		RSyntaxTextArea editor = new RSyntaxTextArea(new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_GROOVY), "", 1, 80);
-
-		editor.setAntiAliasingEnabled(true);
-		editor.setAnimateBracketMatching(false);
-		editor.setAutoIndentEnabled(false);
-		editor.setClearWhitespaceLinesEnabled(false);
-		editor.setBracketMatchingEnabled(true);
-		editor.setCloseCurlyBraces(false);
-		editor.setCodeFoldingEnabled(false);
-		editor.setHyperlinksEnabled(false);
-		editor.setUseFocusableTips(false);
-		editor.setHighlightCurrentLine(false);
-		editor.setLineWrap(false);
-		editor.setPaintMarkOccurrencesBorder(false);
-		editor.setPaintTabLines(false);
-		editor.setMarkOccurrences(false);
-		editor.setFont(new Font(MONOSPACED, PLAIN, 14));
+	private CodeEditor createEditor() {
+		CodeEditor editor = new CodeEditor();
 
 		// update format on change
 		editor.getDocument().addDocumentListener(new LazyDocumentListener(evt -> {
@@ -397,8 +376,7 @@ public class FormatDialog extends JDialog {
 
 	private JComponent createSyntaxPanel(Mode mode) {
 		JPanel panel = new JPanel(new MigLayout("fill, nogrid, novisualpadding", "[pref]", "[fill, min]"));
-		panel.setBorder(createLineBorder(new Color(0xACA899)));
-		panel.setBackground(new Color(0xFFFFE1));
+		Tokens.styleClass(panel, Tokens.STYLE_INFO);
 		panel.setOpaque(true);
 
 		panel.add(new LinkButton(newAction(ResourceBundle.getBundle(FormatDialog.class.getName()).getString(mode.key() + ".syntax"), evt -> {
@@ -411,12 +389,11 @@ public class FormatDialog extends JDialog {
 	private JComponent createExamplesPanel(Mode mode) {
 		JPanel panel = new JPanel(new MigLayout("fill, wrap 3"));
 
-		panel.setBorder(createLineBorder(new Color(0xACA899)));
-		panel.setBackground(new Color(0xFFFFE1));
+		Tokens.styleClass(panel, Tokens.STYLE_INFO);
 
 		for (String format : mode.getSampleExpressions()) {
 			LinkButton formatLink = new LinkButton(newAction(format, e -> setFormatCode(format)));
-			formatLink.setFont(new Font(MONOSPACED, PLAIN, 11));
+			Typography.CODE_SMALL.apply(formatLink);
 
 			// compute format label in background
 			JLabel formatExample = new JLabel("[evaluate]");
@@ -539,7 +516,7 @@ public class FormatDialog extends JDialog {
 						status.setVisible(true);
 					} finally {
 						preview.setVisible(preview.getText().trim().length() > 0);
-						editor.setForeground(preview.getForeground());
+						editor.setInvalid(false);
 
 						// stop progress indicator from becoming visible, if we have been fast enough
 						progressIndicatorTimer.stop();
@@ -566,7 +543,7 @@ public class FormatDialog extends JDialog {
 			status.setVisible(true);
 
 			preview.setVisible(false);
-			editor.setForeground(Color.red);
+			editor.setInvalid(true);
 		}
 	}
 
@@ -604,7 +581,7 @@ public class FormatDialog extends JDialog {
 				JPopupMenu popup = (JPopupMenu) evt.getSource();
 				for (String expression : mode.persistentFormatHistory()) {
 					JMenuItem item = popup.add(newAction(expression, e -> setFormatCode(expression)));
-					item.setFont(new Font(MONOSPACED, PLAIN, 11));
+					Typography.CODE_SMALL.apply(item);
 				}
 			}
 

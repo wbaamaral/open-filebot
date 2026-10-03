@@ -179,13 +179,13 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 	}
 
 	private URL getResource(int aid) throws Exception {
-		// e.g. http://api.anidb.net:9001/httpapi?request=anime&client=filebot&clientver=1&protover=1&aid=4521
-		return new URL("http://api.anidb.net:9001/httpapi?request=anime&client=" + client + "&clientver=" + clientver + "&protover=1&aid=" + aid);
+		// e.g. https://api.anidb.net:9001/httpapi?request=anime&client=filebot&clientver=1&protover=1&aid=4521
+		return new URL("https://api.anidb.net:9001/httpapi?request=anime&client=" + client + "&clientver=" + clientver + "&protover=1&aid=" + aid);
 	}
 
 	@Override
 	public URI getEpisodeListLink(SearchResult searchResult) {
-		return URI.create("http://anidb.net/a" + searchResult.getId());
+		return URI.create("https://anidb.net/a" + searchResult.getId());
 	}
 
 	/**
@@ -212,9 +212,18 @@ public class AnidbClient extends AbstractEpisodeListProvider {
 	 * This method is overridden in {@link net.filebot.WebServices.AnidbClientWithLocalSearch} to fetch the Anime Index from our own host and not anidb.net
 	 */
 	public SearchResult[] getAnimeTitles() throws Exception {
-		// get data file (unzip and cache)
-		byte[] bytes = getCache("root").bytes("anime-titles.dat.gz", n -> new URL("http://anidb.net/api/" + n)).get();
+		try {
+			// get data file (unzip and cache)
+			byte[] bytes = getCache("root").bytes("anime-titles.dat.gz", n -> new URL("https://anidb.net/api/" + n)).get();
+			return parseAnimeTitles(bytes);
+		} catch (Exception e) {
+			// fallback to local bundled index
+			debug.warning("Failed to fetch AniDB title index from remote: " + e.getMessage());
+			throw e;
+		}
+	}
 
+	protected SearchResult[] parseAnimeTitles(byte[] bytes) throws Exception {
 		// <aid>|<type>|<language>|<title>
 		// type: 1=primary title (one per anime), 2=synonyms (multiple per anime), 3=shorttitles (multiple per anime), 4=official title (one per language)
 		Pattern pattern = Pattern.compile("^(?!#)(\\d+)[|](\\d)[|]([\\w-]+)[|](.+)$");

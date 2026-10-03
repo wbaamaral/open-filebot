@@ -6,7 +6,6 @@ import static net.filebot.util.ui.SwingUI.*;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
@@ -32,7 +31,16 @@ import javax.swing.Timer;
 public class ProgressMonitor<T> {
 
 	public static <T> FutureTask<T> runTask(String title, String header, ProgressWorker<T> worker) {
-		SwingProgressTask<T> task = new SwingProgressTask<>(worker);
+		return runTask(title, header, worker, null);
+	}
+
+	/**
+	 * Run a task in a background thread with a progress dialog. The {@code onComplete}
+	 * callback is invoked on the EDT when the task finishes (with the result or exception).
+	 * Do <b>not</b> call {@code get()} on the EDT — use {@code onComplete} instead.
+	 */
+	public static <T> FutureTask<T> runTask(String title, String header, ProgressWorker<T> worker, Consumer<TaskResult<T>> onComplete) {
+		SwingProgressTask<T> task = new SwingProgressTask<>(worker, onComplete);
 
 		SwingUtilities.invokeLater(() -> {
 			SwingProgressDialog dialog = new SwingProgressDialog(title, header, task);
@@ -47,6 +55,29 @@ public class ProgressMonitor<T> {
 		return task;
 	}
 
+	/** Result of a background task: either a value or an exception. */
+	public static class TaskResult<T> {
+		private final T value;
+		private final Throwable error;
+
+		TaskResult(T value, Throwable error) {
+			this.value = value;
+			this.error = error;
+		}
+
+		public T getValue() {
+			return value;
+		}
+
+		public Throwable getError() {
+			return error;
+		}
+
+		public boolean isError() {
+			return error != null;
+		}
+	}
+
 	@FunctionalInterface
 	public interface ProgressWorker<T> {
 		T call(Consumer<String> message, BiConsumer<Long, Long> progress, Supplier<Boolean> cancelled) throws Exception;
@@ -55,11 +86,14 @@ public class ProgressMonitor<T> {
 	private static class SwingProgressTask<T> extends FutureTask<T> {
 
 		private final ProgressWorker<T> worker;
+		private final Consumer<TaskResult<T>> onComplete;
 		private volatile SwingProgressDialog dialog;
+		private volatile Thread workerThread;
 
-		public SwingProgressTask(ProgressWorker<T> worker) {
+		public SwingProgressTask(ProgressWorker<T> worker, Consumer<TaskResult<T>> onComplete) {
 			super(() -> null);
 			this.worker = worker;
+			this.onComplete = onComplete;
 		}
 
 		public void setDialog(SwingProgressDialog dialog) {
@@ -68,8 +102,11 @@ public class ProgressMonitor<T> {
 
 		@Override
 		public void run() {
+			workerThread = Thread.currentThread();
+			T result = null;
+			Throwable error = null;
 			try {
-				T result = worker.call(
+				result = worker.call(
 					msg -> {
 						if (dialog != null) dialog.updateMessage(msg);
 					},
@@ -80,10 +117,16 @@ public class ProgressMonitor<T> {
 				);
 				set(result);
 			} catch (Throwable t) {
+				error = t;
 				setException(t);
 			} finally {
+				workerThread = null;
 				if (dialog != null) {
 					dialog.close();
+				}
+				if (onComplete != null) {
+					TaskResult<T> taskResult = new TaskResult<T>(result, error);
+					SwingUtilities.invokeLater(() -> onComplete.accept(taskResult));
 				}
 			}
 		}
@@ -91,6 +134,11 @@ public class ProgressMonitor<T> {
 		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
 			boolean cancelled = super.cancel(mayInterruptIfRunning);
+			// FutureTask.cancel() cannot interrupt because we override run();
+			// interrupt the worker thread directly
+			if (cancelled && mayInterruptIfRunning && workerThread != null) {
+				workerThread.interrupt();
+			}
 			if (dialog != null) {
 				dialog.close();
 			}
@@ -156,7 +204,7 @@ public class ProgressMonitor<T> {
 			mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
 
 			JLabel headerLabel = new JLabel(header);
-			headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 13f));
+			Appearance.Typography.HEADING.apply(headerLabel);
 			headerLabel.setAlignmentX(JPanel.LEFT_ALIGNMENT);
 
 			messageLabel = new JLabel(" ");
@@ -204,10 +252,11 @@ public class ProgressMonitor<T> {
 			SwingUtilities.invokeLater(() -> {
 				if (progressBar != null) {
 					if (total > 0) {
+						// normalize to 0–1000 to avoid Integer.MAX_VALUE saturation (BUG-10)
 						progressBar.setIndeterminate(false);
 						progressBar.setMinimum(0);
-						progressBar.setMaximum((int) Math.min(total, Integer.MAX_VALUE));
-						progressBar.setValue((int) Math.min(current, Integer.MAX_VALUE));
+						progressBar.setMaximum(1000);
+						progressBar.setValue((int) Math.min(1000, Math.max(0, current * 1000 / total)));
 					} else {
 						progressBar.setIndeterminate(true);
 					}

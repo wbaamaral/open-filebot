@@ -23,6 +23,7 @@ Este fork foi ativamente atualizado e modernizado com foco em compatibilidade e 
 * **Compatibilidade com Java 25 (LTS)**: Todo o código-fonte, opções de compilação e flags de inicialização da JVM foram adaptados para o Java 25 moderno (`--enable-native-access`, ajustes de reflexão e aberturas modulares `--add-opens`).
 * **Desacoplamento JavaFX -> Swing Puro**: A dependência legada do ecossistema JavaFX (como o painel *Getting Started*) foi desacoplada e convertida para componentes Swing nativos de alto desempenho, eliminando dependências externas desnecessárias.
 * **Correções de Estabilidade e XML**: Remoção de APIs descontinuadas do JDK (como referências diretas ao JAXB em módulos de histórico) substituídas por parsing padrão DOM.
+* **Aparência Consistente**: Fontes Inter e JetBrains Mono embutidas, diálogo de aparência (tema, fonte e tamanho), ícones SVG (Tabler) que acompanham o tema e [design tokens](docs/DESIGN_TOKENS.md) como fonte única de cores, espaçamentos e tipografia.
 * **Distribuição Portátil Pronta para Uso**: Inclusão de alvo no Ant para geração de pacote portátil Linux completo com bibliotecas nativas (`fpcalc`, 7-Zip, JNA) e launcher executável [./filebot](file:///home/wbaamaral/acervo/projetos/filebot/filebot) na raiz.
 
 ---
@@ -57,6 +58,7 @@ ant portable
 
 * 📖 **[docs/COMPILACAO.md](file:///home/wbaamaral/acervo/projetos/filebot/docs/COMPILACAO.md)**: Guia passo a passo de configuração do ambiente, resolução de dependências e criação de pacotes (`portable`, `fatjar`, `deb`, `msi`, `spk`).
 * 📋 **[docs/FUTURE_FEATURES.md](file:///home/wbaamaral/acervo/projetos/filebot/docs/FUTURE_FEATURES.md)**: Catálogo detalhado das novas APIs (TheTVDB v4, OpenSubtitles REST, TMDb TV) e features modernas mapeadas para implementação futura no projeto.
+* 🧭 **[Auditoria e roadmap incremental](docs/plan/auditoria-roadmap-modernizacao.md)**: Estado real das funcionalidades, prioridades, dependências, tarefas e critérios de aceite.
 
 ---
 
@@ -69,3 +71,7 @@ Caso tenha interesse no código exatamente como estava no momento do fork origin
 ## ⚖️ Licença
 
 O código-fonte do Open FileBot é software livre e está licenciado sob os termos da **GNU Affero General Public License v3.0 (GNU AGPLv3)**. Consulte o arquivo [LICENSE.md](file:///home/wbaamaral/acervo/projetos/filebot/LICENSE.md) para o texto completo da licença.
+
+As fontes embutidas **Inter** (© The Inter Project Authors) e **JetBrains Mono** (© The JetBrains Mono Project Authors) são distribuídas sob a **SIL Open Font License 1.1**, por meio dos pacotes `flatlaf-fonts-inter` e `flatlaf-fonts-jetbrains-mono`; o texto da licença acompanha cada fonte dentro do JAR.
+
+Os ícones de interface são gerados a partir do **[Tabler Icons](https://tabler.io/icons)** (© Paweł Kuna), distribuído sob a **licença MIT**; o texto da licença está em `source/net/filebot/resources/svg/LICENSE-tabler-icons.txt`.

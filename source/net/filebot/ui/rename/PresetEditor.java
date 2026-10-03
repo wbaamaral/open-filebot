@@ -1,13 +1,11 @@
 package net.filebot.ui.rename;
 
-import static java.awt.Font.*;
 import static java.util.Collections.*;
 import static javax.swing.BorderFactory.*;
 import static net.filebot.Logging.*;
 import static net.filebot.Settings.*;
 import static net.filebot.util.ui.SwingUI.*;
 
-import java.awt.Font;
 import java.awt.Window;
 import java.io.File;
 import java.util.List;
@@ -26,9 +24,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxDocument;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import net.filebot.Language;
@@ -41,6 +37,7 @@ import net.filebot.format.ExpressionFileFormat;
 import net.filebot.format.ExpressionFilter;
 import net.filebot.format.MediaBindingBean;
 import net.filebot.platform.mac.MacAppUtilities;
+import net.filebot.ui.CodeEditor;
 import net.filebot.ui.HeaderPanel;
 import net.filebot.ui.rename.FormatDialog.Mode;
 import net.filebot.util.FileUtilities.ExtensionFileFilter;
@@ -60,8 +57,8 @@ public class PresetEditor extends JDialog {
 
 	private HeaderPanel presetNameHeader;
 	private JTextField pathInput;
-	private RSyntaxTextArea filterEditor;
-	private RSyntaxTextArea formatEditor;
+	private CodeEditor filterEditor;
+	private CodeEditor formatEditor;
 
 	private JComboBox<Datasource> providerCombo;
 	private JComboBox<SortOrder> sortOrderCombo;
@@ -199,24 +196,8 @@ public class PresetEditor extends JDialog {
 		return inputGroup;
 	}
 
-	private RSyntaxTextArea createEditor() {
-		RSyntaxTextArea editor = new RSyntaxTextArea(new RSyntaxDocument(SyntaxConstants.SYNTAX_STYLE_GROOVY), "", 1, 80);
-
-		editor.setAntiAliasingEnabled(true);
-		editor.setAnimateBracketMatching(false);
-		editor.setAutoIndentEnabled(false);
-		editor.setClearWhitespaceLinesEnabled(false);
-		editor.setBracketMatchingEnabled(true);
-		editor.setCloseCurlyBraces(false);
-		editor.setCodeFoldingEnabled(false);
-		editor.setHyperlinksEnabled(false);
-		editor.setUseFocusableTips(false);
-		editor.setHighlightCurrentLine(false);
-		editor.setLineWrap(false);
-		editor.setPaintMarkOccurrencesBorder(false);
-		editor.setPaintTabLines(false);
-		editor.setMarkOccurrences(false);
-		editor.setFont(new Font(MONOSPACED, PLAIN, 14));
+	private CodeEditor createEditor() {
+		CodeEditor editor = new CodeEditor();
 
 		return editor;
 	}

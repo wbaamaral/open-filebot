@@ -21,6 +21,10 @@
 		<dependency rev="0.7" org="com.github.junrar" name="junrar" />
 		<dependency rev="2.6.1" org="com.fifesoft" name="rsyntaxtextarea" />
 		<dependency rev="3.5.4" org="com.formdev" name="flatlaf" />
+		<dependency rev="4.1" org="com.formdev" name="flatlaf-fonts-inter" />
+		<dependency rev="2.304" org="com.formdev" name="flatlaf-fonts-jetbrains-mono" />
+		<dependency rev="3.5.4" org="com.formdev" name="flatlaf-extras" />
+		<dependency rev="1.4.0" org="com.github.weisj" name="jsvg" />
 		<dependency rev="9.20-2.00beta" org="net.sf.sevenzipjbinding" name="sevenzipjbinding" />
 		<dependency rev="9.20-2.00beta" org="net.sf.sevenzipjbinding" name="sevenzipjbinding-all-platforms" />
 		<dependency rev="0.6" org="com.optimaize.languagedetector" name="language-detector" />
@@ -29,6 +33,7 @@
 		<dependency rev="2.10.1" org="com.drewnoakes" name="metadata-extractor" />
 
 		<!-- FileBot Scripting -->
+		<dependency rev="1.19" org="org.kohsuke" name="groovy-sandbox" transitive="false" />
 		<dependency rev="1.10.1" org="org.apache.ant" name="ant" />
 		<dependency rev="1.10.1" org="org.apache.ant" name="ant-launcher" />
 		<dependency rev="1.10.1" org="org.apache.ant" name="ant-commons-net" />

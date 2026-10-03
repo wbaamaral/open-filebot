@@ -3,11 +3,9 @@ package net.filebot.ui.sfv;
 
 import static java.awt.Color.*;
 import static java.awt.Cursor.*;
-import static java.awt.Font.*;
 import static java.awt.RenderingHints.*;
 
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
@@ -17,6 +15,7 @@ import javax.swing.Icon;
 import javax.swing.JToggleButton;
 
 import net.filebot.ResourceManager;
+import net.filebot.util.ui.Appearance.Typography;
 
 public class ChecksumButton extends JToggleButton {
 
@@ -31,7 +30,7 @@ public class ChecksumButton extends JToggleButton {
 		setMaximumSize(getPreferredSize());
 
 		setForeground(WHITE);
-		setFont(new Font(DIALOG, PLAIN, 11));
+		Typography.BADGE.apply(this);
 
 		// as image button
 		setBorderPainted(false);

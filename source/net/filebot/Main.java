@@ -12,12 +12,6 @@ import java.awt.Dialog.ModalityType;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.security.CodeSource;
-import java.security.Permission;
-import java.security.PermissionCollection;
-import java.security.Permissions;
-import java.security.Policy;
-import java.security.ProtectionDomain;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Handler;
@@ -77,12 +71,6 @@ public class Main {
 
 				// clear caches
 				if (args.clearCache()) {
-					// clear cache must be called manually
-					if (System.console() == null) {
-						log.severe("`filebot -clear-cache` has been disabled due to abuse.");
-						System.exit(1);
-					}
-
 					log.info("Clear cache");
 					for (File folder : getChildren(ApplicationFolder.Cache.get(), FOLDERS)) {
 						log.fine("* Delete " + folder);
@@ -103,7 +91,6 @@ public class Main {
 
 			// initialize this stuff before anything else
 			CacheManager.getInstance();
-			initializeSecurityManager();
 
 			// initialize history spooler
 			HistorySpooler.getInstance().setPersistentHistoryEnabled(useRenameHistory());
@@ -111,6 +98,10 @@ public class Main {
 			// CLI mode => run command-line interface and then exit
 			if (args.runCLI()) {
 				int status = new ArgumentProcessor().run(args);
+
+				// commit history now and not later on the shutdown hook thread where log messages may get lost
+				HistorySpooler.getInstance().commit();
+
 				System.exit(status);
 			}
 
@@ -157,13 +148,6 @@ public class Main {
 		List<File> files = args.getFiles(false);
 		if (files.size() > 0) {
 			SwingEventBus.getInstance().post(new FileTransferable(files));
-		}
-
-		// JavaFX is used for ProgressMonitor and GettingStartedDialog
-		try {
-			initJavaFX();
-		} catch (Throwable e) {
-			log.log(Level.SEVERE, "Failed to initialize JavaFX. Please install JavaFX.", e);
 		}
 	}
 
@@ -229,39 +213,6 @@ public class Main {
 		int width = Integer.parseInt(settings.get("window.width"));
 		int height = Integer.parseInt(settings.get("window.height"));
 		window.setBounds(x, y, width, height);
-	}
-
-	/**
-	 * Initialize default SecurityManager and grant all permissions via security policy. Initialization is required in order to run {@link ExpressionFormat} in a secure sandbox.
-	 */
-	private static void initializeSecurityManager() {
-		try {
-			// initialize security policy used by the default security manager
-			// Note: on Java 24+ (JEP 486), setting Policy or SecurityManager throws UnsupportedOperationException
-			Policy.setPolicy(new Policy() {
-
-				@Override
-				public boolean implies(ProtectionDomain domain, Permission permission) {
-					// all permissions
-					return true;
-				}
-
-				@Override
-				public PermissionCollection getPermissions(CodeSource codesource) {
-					// VisualVM can't connect if this method does return
-					// a checked immutable PermissionCollection
-					return new Permissions();
-				}
-			});
-
-			// set default security manager
-			System.setSecurityManager(new SecurityManager());
-		} catch (UnsupportedOperationException e) {
-			debug.fine("SecurityManager is permanently disabled on this Java runtime, continuing with standard security.");
-		} catch (Throwable e) {
-			// security manager was probably set via system property or unsupported
-			debug.log(Level.WARNING, e.getMessage(), e);
-		}
 	}
 
 	public static void initializeSystemProperties(ArgumentBean args) {

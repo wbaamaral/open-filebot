@@ -17,10 +17,11 @@ public class GettingStartedStage {
 					+ "1. <b>Carregar Arquivos:</b> Arraste e solte episódios ou filmes na lista da esquerda (Original Files).<br>"
 					+ "2. <b>Buscar Metadados:</b> Clique no botão <b>Fetch Data</b> (TheMovieDB, TheTVDB, AniDB).<br>"
 					+ "3. <b>Verificar Nomes:</b> Confira os novos nomes na lista da direita (New Names).<br>"
-					+ "4. <b>Renomear:</b> Pressione <b>F5</b> ou clique em <b>Rename</b> para aplicar as alterações.<br><br>"
+					+ "4. <b>Renomear:</b> Clique em <b>Rename</b> para aplicar as alterações.<br><br>"
 					+ "<b>Atalhos Rápidos:</b><br>"
-					+ "• <i>F5:</i> Renomear<br>"
+					+ "• <i>F5:</i> Abrir GroovyPad (console de scripts)<br>"
 					+ "• <i>Delete:</i> Remover arquivo da lista<br>"
+					+ "• <i>Ctrl+Shift+Delete:</i> Limpar cache<br>"
 					+ "• <i>F1:</i> Esta tela de ajuda"
 					+ "</html>";
 

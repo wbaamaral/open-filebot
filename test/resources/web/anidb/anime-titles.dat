@@ -1,0 +1,16 @@
+# AniDB anime-titles.dat format
+# aid|type|language|title
+# type: 1=primary, 2=synonyms, 3=shorttitles, 4=official
+1|1|x-jat|Cowboy Bebop
+1|4|x-jat|カウボーイビバップ
+1|4|en|Cowboy Bebop
+1|4|ja|カウボーイビバップ
+1|2|en|Cowboy Bebop: The Movie
+328|1|x-jat|Fullmetal Alchemist: Brotherhood
+328|4|en|Fullmetal Alchemist: Brotherhood
+328|4|ja|鋼の錬金術師 FULLMETAL ALCHEMIST
+328|2|en|Hagane no Renkinjutsushi: Fullmetal Alchemist
+164|1|x-jat|Monster
+164|4|en|Monster
+164|4|ja|モンスター
+164|2|de|Monster

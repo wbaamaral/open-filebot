@@ -1,6 +1,5 @@
 package net.filebot.ui.subtitle;
 
-import static java.awt.Font.*;
 import static java.util.Collections.*;
 import static java.util.regex.Pattern.*;
 import static java.util.stream.Collectors.*;
@@ -43,10 +42,10 @@ import javax.swing.table.TableRowSorter;
 
 import net.filebot.ResourceManager;
 import net.filebot.subtitle.SubtitleElement;
-import net.filebot.util.ui.GradientStyle;
 import net.filebot.util.ui.LazyDocumentListener;
-import net.filebot.util.ui.notification.SeparatorBorder;
-import net.filebot.util.ui.notification.SeparatorBorder.Position;
+import net.filebot.util.ui.Appearance.Typography;
+import net.filebot.util.ui.ThemeSeparatorBorder;
+import net.filebot.util.ui.Tokens;
 import net.miginfocom.swing.MigLayout;
 
 public class SubtitleViewer extends JFrame {
@@ -67,12 +66,12 @@ public class SubtitleViewer extends JFrame {
 
 		// bold title label in header
 		titleLabel.setText(title);
-		titleLabel.setFont(titleLabel.getFont().deriveFont(BOLD));
+		Typography.HEADING.apply(titleLabel);
 
 		JPanel header = new JPanel(new MigLayout("insets dialog, nogrid, novisualpadding, fillx"));
 
-		header.setBackground(Color.white);
-		header.setBorder(new SeparatorBorder(1, new Color(0xB4B4B4), new Color(0xACACAC), GradientStyle.LEFT_TO_RIGHT, Position.BOTTOM));
+		Tokens.styleClass(header, Tokens.STYLE_HEADER);
+		header.setBorder(new ThemeSeparatorBorder());
 
 		header.add(titleLabel, "wrap, h pref!");
 		header.add(infoLabel, "gap indent*2, h pref!, wrap");
@@ -99,7 +98,6 @@ public class SubtitleViewer extends JFrame {
 
 	private JTable createTable(TableModel model) {
 		final JTable table = new JTable(model);
-		table.setBackground(Color.white);
 		table.setAutoCreateRowSorter(true);
 		table.setFillsViewportHeight(true);
 		table.setRowHeight(18);
