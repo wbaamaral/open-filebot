@@ -35,11 +35,11 @@ jobs:
       # BUG-23: verify SHA-256 of downloaded build tools
       - name: Configurar Apache Ivy e Suporte a XZ no Ant
         run: |
-          mkdir -p ~/.ant/lib
-          curl -fsSL https://repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.2/ivy-2.5.2.jar -o ~/.ant/lib/ivy.jar
-          echo "e4f53f4d0828d3b4a0e8d86b1a0e5c0c14d31b0a20d36d4e3c1b0a8f7e6d5c4b  ~/.ant/lib/ivy.jar" | sha256sum -c --ignore-missing
-          curl -fsSL https://repo1.maven.org/maven2/org/tukaani/xz/1.6/xz-1.6.jar -o ~/.ant/lib/xz.jar
-          echo "f0c1d2e3b4a5968778695a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d  ~/.ant/lib/xz.jar" | sha256sum -c --ignore-missing
+          mkdir -p "$HOME/.ant/lib"
+          curl -fsSL https://repo1.maven.org/maven2/org/apache/ivy/ivy/2.5.2/ivy-2.5.2.jar -o "$HOME/.ant/lib/ivy.jar"
+          curl -fsSL https://repo1.maven.org/maven2/org/tukaani/xz/1.6/xz-1.6.jar -o "$HOME/.ant/lib/xz.jar"
+          echo "98428d545ea63cd9a0aaf255caf42cb8cb64fe430dbb5e709aed536d4daeed04  $HOME/.ant/lib/ivy.jar" | sha256sum -c -
+          echo "a594643d73cc01928cf6ca5ce100e094ea9d73af760a5d4fb6b75fa673ecec96  $HOME/.ant/lib/xz.jar" | sha256sum -c -
 
       - name: Resolver Dependências (Ivy)
         run: |
