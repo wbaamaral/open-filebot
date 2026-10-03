@@ -42,10 +42,25 @@ Nosso mais sincero agradecimento a **Reinhard Pointner** ([@rednoah](https://git
 Acesse a página de **[Lançamentos / Releases no GitHub](https://github.com/wbaamaral/open-filebot/releases)** e baixe o pacote de sua preferência:
 
 * **Pacote Portátil Linux (`FileBot_4.9.1-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
+* **Pacote Portátil Linux (`FileBot_4.9.1-portable.tar.gz`)**: Mesmo conteúdo, compactado em `gzip`.
 * **Arquivo Executável Java (`FileBot_4.9.1.jar`)**: Execute em qualquer sistema com Java 25 instalado:
   ```bash
   java -jar FileBot_4.9.1.jar
   ```
+
+---
+
+## 🛡️ Correções da versão 4.9.1
+
+A versão **4.9.1** consolida um ciclo completo de auditoria técnica com **26 bugs corrigidos** e **288 testes offline** protegendo o build:
+
+* **Segurança**: sandbox real para expressões Groovy (`groovy-sandbox` + `TimedInterrupt`), verificação de integridade do pacote de scripts, bloqueio de *Zip Slip*, exclusão de caminhos relativos ao diretório de trabalho e migração de todos os endpoints de serviços para **HTTPS**.
+* **Confiabilidade**: gravação atômica de histórico e preferências, lixeira XDG, `-exec` falha fechado, `--apply prune`/`date` corretos e seguros em links.
+* **Interface**: rename e *match* assíncronos (EDT não congela), diálogo de progresso com cancelamento funcional, atalhos coerentes com a ajuda, troca de tema em tempo de execução.
+* **CLI e build**: prefixo explícito `g:` para Groovy inline, launcher que resolve o diretório portable dinamicamente, nomes válidos em `--conflict index`, CI para *pull requests*.
+* **Testes**: suíte offline bloqueante isolada em sandbox, *fixtures* offline para TMDb, TVMaze, OMDb, AniDB e AcoustID, testes legados isolados com `@Ignore`.
+
+Detalhamento completo: **[Plano de Correção de Bugs](plan/plano-correcao-bugs.md)** · **[Auditoria de Bugs e Falhas](plan/auditoria-bugs-falhas.md)** · **[ADR do sandbox de expressões](adr/0001-expressoes-de-formato.md)**
 
 ---
 
