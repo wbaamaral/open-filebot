@@ -41,10 +41,10 @@ Nosso mais sincero agradecimento a **Reinhard Pointner** ([@rednoah](https://git
 
 Acesse a página de **[Lançamentos / Releases no GitHub](https://github.com/wbaamaral/open-filebot/releases)** e baixe o pacote de sua preferência:
 
-* **Pacote Portátil Linux (`FileBot_4.9.0-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
-* **Arquivo Executável Java (`FileBot_4.9.0.jar`)**: Execute em qualquer sistema com Java 25 instalado:
+* **Pacote Portátil Linux (`FileBot_4.9.1-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
+* **Arquivo Executável Java (`FileBot_4.9.1.jar`)**: Execute em qualquer sistema com Java 25 instalado:
   ```bash
-  java -jar FileBot_4.9.0.jar
+  java -jar FileBot_4.9.1.jar
   ```
 
 ---
