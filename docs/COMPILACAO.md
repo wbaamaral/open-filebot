@@ -93,13 +93,13 @@ ant portable
 ```
 
 **Arquivos gerados em `dist/`:**
-* `dist/FileBot_4.8.0-portable/`: Diretório contendo:
+* `dist/FileBot_4.9.1-portable/`: Diretório contendo:
   * `FileBot.jar`: JAR executável contendo todas as classes.
   * `filebot` e `filebot.sh`: Scripts executáveis de inicialização já configurados com as opções de `--add-opens` e `--enable-native-access` necessárias para o Java 25.
   * `lib/`: Módulos nativos (`.so`) e binários `fpcalc` organizados por arquitetura (`x86_64`, `aarch64`, `armv7l`, `i686`).
   * `data/`: Diretório local para cache e preferências portáteis.
-* `dist/FileBot_4.8.0-portable.tar.xz`: Arquivo compactado em tar.xz para distribuição.
-* `dist/FileBot_4.8.0-portable.tar.gz`: Arquivo compactado em tar.gz.
+* `dist/FileBot_4.9.1-portable.tar.xz`: Arquivo compactado em tar.xz para distribuição.
+* `dist/FileBot_4.9.1-portable.tar.gz`: Arquivo compactado em tar.gz.
 
 ### 4.2 Executável Standalone Fat JAR
 
@@ -109,7 +109,7 @@ Gera um único arquivo `.jar` contendo todas as classes compiladas e bibliotecas
 ant fatjar
 ```
 
-* **Arquivo gerado:** `dist/FileBot_4.8.0.jar`.
+* **Arquivo gerado:** `dist/FileBot_4.9.1.jar`.
 
 ### 4.3 Pacotes do Instalador Debian (`.deb`)
 
@@ -167,7 +167,7 @@ Após compilar com `ant portable`, você pode executar o FileBot imediatamente a
 
 Ou diretamente a partir da pasta de distribuição:
 ```bash
-./dist/FileBot_4.8.0-portable/filebot -version
+./dist/FileBot_4.9.1-portable/filebot -version
 ```
 
 Para abrir a interface gráfica:
@@ -199,7 +199,7 @@ Para disponibilizar o FileBot globalmente no sistema (`/opt/filebot`), acessíve
 1. **Instalar arquivos em `/opt/filebot` e link simbólico em `/usr/local/bin`:**
    ```bash
    sudo mkdir -p /opt/filebot
-   sudo cp -r dist/FileBot_4.8.0-portable/* /opt/filebot/
+   sudo cp -r dist/FileBot_4.9.1-portable/* /opt/filebot/
    sudo chmod 755 /opt/filebot/filebot /opt/filebot/filebot.sh
    sudo find /opt/filebot/lib -type f -exec chmod 755 {} +
    sudo ln -sf /opt/filebot/filebot /usr/local/bin/filebot
