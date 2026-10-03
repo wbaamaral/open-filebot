@@ -152,7 +152,12 @@
 
 	<target name="jar" depends="build">
 		<jar destfile="${dir.dist}/lib/filebot.jar" compress="no">
-			<fileset dir="${dir.build}" />
+			<fileset dir="${dir.build}">
+				<!-- exclude test classes, sandbox artifacts and reports (they live under build/ too) -->
+				<exclude name="test/**" />
+				<exclude name="test-sandbox/**" />
+				<exclude name="reports/**" />
+			</fileset>
 			<manifest>
 				<attribute name="Build-Date" value="${tstamp.date}" />
 				<attribute name="Build-Revision" value="${revision}" />
