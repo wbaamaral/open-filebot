@@ -39,14 +39,16 @@ Nosso mais sincero agradecimento a **Reinhard Pointner** ([@rednoah](https://git
 
 ## 📥 Como Baixar
 
-Acesse a página de **[Lançamentos / Releases no GitHub](https://github.com/wbaamaral/open-filebot/releases)** e baixe o pacote de sua preferência:
+**Download direto da versão 4.9.1:**
 
-* **Pacote Portátil Linux (`FileBot_4.9.1-portable.tar.xz`)**: Descompacte e execute diretamente com `./filebot`. Não requer instalação.
-* **Pacote Portátil Linux (`FileBot_4.9.1-portable.tar.gz`)**: Mesmo conteúdo, compactado em `gzip`.
-* **Arquivo Executável Java (`FileBot_4.9.1.jar`)**: Execute em qualquer sistema com Java 25 instalado:
+* 📦 **[FileBot_4.9.1-portable.tar.xz](https://github.com/wbaamaral/open-filebot/releases/download/v4.9.1/FileBot_4.9.1-portable.tar.xz)** (40 MB) — descompacte e rode `./filebot`. Não requer instalação.
+* 📦 **[FileBot_4.9.1-portable.tar.gz](https://github.com/wbaamaral/open-filebot/releases/download/v4.9.1/FileBot_4.9.1-portable.tar.gz)** (55 MB) — mesmo pacote, compactado em `gzip`.
+* ☕ **[FileBot_4.9.1.jar](https://github.com/wbaamaral/open-filebot/releases/download/v4.9.1/FileBot_4.9.1.jar)** (94 MB) — requer Java 25 instalado:
   ```bash
   java -jar FileBot_4.9.1.jar
   ```
+
+Também disponíveis em **[Lançamentos / Releases no GitHub](https://github.com/wbaamaral/open-filebot/releases)**, com versões anteriores.
 
 ---
 
