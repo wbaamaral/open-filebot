@@ -53,25 +53,48 @@ fi
 mkdir -p "$APP_DATA/tmp"
 
 # resolve java executable (ensure Java 25+)
-JAVA="java"
-if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
-	JAVA="$JAVA_HOME/bin/java"
-fi
-JAVA_VER=$("$JAVA" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f1)
-if [ "$JAVA_VER" = "1" ]; then
-	JAVA_VER=$("$JAVA" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f2)
-fi
-if [ -z "$JAVA_VER" ] || [ "$JAVA_VER" -lt 25 ] 2>/dev/null; then
-	if [ -x "$HOME/.sdkman/candidates/java/current/bin/java" ]; then
-		JAVA="$HOME/.sdkman/candidates/java/current/bin/java"
-	elif [ -x "$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java" ]; then
-		JAVA="$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java"
-	elif [ -d "$HOME/.sdkman/candidates/java" ]; then
-		SDKMAN_JAVA=$(find "$HOME/.sdkman/candidates/java" -maxdepth 2 -name "java" -path "*/bin/java" 2>/dev/null | grep -E "25\." | head -n 1)
-		if [ -n "$SDKMAN_JAVA" ] && [ -x "$SDKMAN_JAVA" ]; then
-			JAVA="$SDKMAN_JAVA"
+java_major() {
+	"$1" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f1 | {
+		read -r major
+		if [ "$major" = "1" ]; then
+			"$1" -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f2
+		else
+			echo "$major"
 		fi
+	}
+}
+
+java_ok() {
+	[ -x "$1" ] || return 1
+	major=$(java_major "$1")
+	[ -n "$major" ] && [ "$major" -ge 25 ] 2>/dev/null
+}
+
+JAVA=""
+for candidate in \
+	${JAVA_HOME:+"$JAVA_HOME/bin/java"} \
+	"$(command -v java 2>/dev/null)" \
+	"$HOME/.sdkman/candidates/java/current/bin/java" \
+	"$HOME/.sdkman/candidates/java/25.0.3-tem/bin/java"
+do
+	if java_ok "$candidate"; then
+		JAVA="$candidate"
+		break
 	fi
+done
+
+if [ -z "$JAVA" ] && [ -d "$HOME/.sdkman/candidates/java" ]; then
+	for candidate in $(find "$HOME/.sdkman/candidates/java" -maxdepth 3 -type f -path "*/bin/java" 2>/dev/null); do
+		if java_ok "$candidate"; then
+			JAVA="$candidate"
+			break
+		fi
+	done
+fi
+
+if [ -z "$JAVA" ]; then
+	echo "Error: Java 25+ is required but was not found" >&2
+	exit 1
 fi
 
 # auto-detect headless mode: enable only when no display server is present

@@ -755,7 +755,11 @@
 		</tar>
 
 		<!-- stable symlink without version so ./filebot works across version bumps -->
-		<delete dir="${dir.dist}/portable" failonerror="false" />
+		<!-- remove only the symlink itself; delete dir would follow it and wipe ${release}-portable -->
+		<exec executable="rm" osfamily="unix" failonerror="false">
+			<arg value="-f" />
+			<arg value="${dir.dist}/portable" />
+		</exec>
 		<symlink link="${dir.dist}/portable" resource="${release}-portable" overwrite="true" />
 	</target>
 
